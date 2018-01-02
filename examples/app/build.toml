@@ -1,0 +1,26 @@
+import = [
+  "../engine/build.toml",
+  "../vectormath/build.toml",
+]
+
+[[executable]]
+name = "app"
+deps = [
+  "engine",
+]
+defines = [
+  "USE_MATH=1",
+  "USE_SSE=1",
+]
+include_dirs = [
+  "include",
+  "../engine/include",
+  "../vectormath/include",
+]
+headers = [
+  "include/app/Game.h",
+]
+sources = [
+  "src/Game.cpp",
+  "src/main.cpp",
+]

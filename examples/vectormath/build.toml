@@ -1,0 +1,11 @@
+[[static_library]]
+name = "vectormath"
+include_dirs = [
+  "include",
+]
+headers = [
+  "include/vectormath/Vector2.h",
+]
+sources = [
+  "src/Vector2.cpp",
+]
