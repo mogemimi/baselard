@@ -5,39 +5,39 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
-
-type NinjaDepOption struct {
-	Deps    string
-	DepFile string
-}
 
 type NinjaRule struct {
 	Name        string
 	Command     string
-	Description string // TODO
-	DepOption   *NinjaDepOption
+	Description string
+	Deps        string
+	DepFile     string
 }
 
-type BuildEdge struct {
-	Rule      string
-	Inputs    []string
-	Outputs   []string
-	Variables map[string]string
+type NinjaBuild struct {
+	Rule         string
+	Outputs      []string
+	Inputs       []string
+	ImplicitOuts []string
+	ImplicitDeps []string
+	Variables    map[string]string
+	Pool         string
 }
 
 type NinjaGenerator struct {
 	Variables []string
 	Rules     []*NinjaRule
-	Edges     []*BuildEdge
+	Edges     []*NinjaBuild
 }
 
 func (gen *NinjaGenerator) AddRule(rule *NinjaRule) {
 	gen.Rules = append(gen.Rules, rule)
 }
 
-func (gen *NinjaGenerator) AddEdge(edge *BuildEdge) {
+func (gen *NinjaGenerator) AddEdge(edge *NinjaBuild) {
 	gen.Edges = append(gen.Edges, edge)
 }
 
@@ -47,17 +47,43 @@ func (gen *NinjaGenerator) AddVariable(key, value string) {
 
 func (r *NinjaRule) ToString() (str string) {
 	str += fmt.Sprintln("rule", r.Name)
+	if len(r.Description) > 0 {
+		str += fmt.Sprintln("  description =", r.DepFile)
+	}
 	str += fmt.Sprintln("  command =", r.Command)
-	if r.DepOption != nil {
-		str += fmt.Sprintln("  deps =", r.DepOption.Deps)
-		str += fmt.Sprintln("  depfile =", r.DepOption.DepFile)
+	if len(r.Deps) > 0 {
+		str += fmt.Sprintln("  deps =", r.Deps)
+	}
+	if len(r.DepFile) > 0 {
+		str += fmt.Sprintln("  depfile =", r.DepFile)
 	}
 	return str
 }
 
-func (e *BuildEdge) ToString() (str string) {
-	str += "build "
+func (e *NinjaBuild) ToString() (str string) {
+	useMultiLine := (len(e.Outputs)+len(e.ImplicitOuts) > 1) || (len(e.Inputs)+len(e.ImplicitDeps) > 1)
+
+	str += "build"
+	if len(e.Outputs) > 0 {
+		if useMultiLine {
+			str += " $\n  "
+		} else {
+			str += " "
+		}
+	}
 	for i, f := range e.Outputs {
+		if i > 0 {
+			str += " $\n  "
+		}
+		str += f
+	}
+	if len(e.ImplicitOuts) > 0 {
+		str += " | "
+		if useMultiLine {
+			str += "$\n  "
+		}
+	}
+	for i, f := range e.ImplicitOuts {
 		if i > 0 {
 			str += " $\n  "
 		}
@@ -65,10 +91,12 @@ func (e *BuildEdge) ToString() (str string) {
 	}
 	str += ": "
 	str += e.Rule
-	if len(e.Inputs) > 1 {
-		str += " $\n  "
-	} else {
-		str += " "
+	if len(e.Inputs) > 0 {
+		if useMultiLine {
+			str += " $\n  "
+		} else {
+			str += " "
+		}
 	}
 	for i, f := range e.Inputs {
 		if i > 0 {
@@ -76,9 +104,29 @@ func (e *BuildEdge) ToString() (str string) {
 		}
 		str += f
 	}
+	if len(e.ImplicitDeps) > 0 {
+		str += " | "
+		if useMultiLine {
+			str += "$\n  "
+		}
+	}
+	for i, f := range e.ImplicitDeps {
+		if i > 0 {
+			str += " $\n  "
+		}
+		str += f
+	}
 	str += "\n"
+	if len(e.Pool) > 0 {
+		str += fmt.Sprintf("  pool = %s\n", e.Pool)
+	}
+	var variables []string
 	for k, v := range e.Variables {
-		str += fmt.Sprintf("  %s = %s\n", k, v)
+		variables = append(variables, fmt.Sprintf("  %s = %s\n", k, v))
+	}
+	sort.Strings(variables)
+	for _, v := range variables {
+		str += v
 	}
 	return str
 }
@@ -115,7 +163,7 @@ func compileSources(env *Environment, executable *Executable, generator *NinjaGe
 		}
 		variables["cflags"] = strings.Join(cflags, " ")
 
-		generator.AddEdge(&BuildEdge{
+		generator.AddEdge(&NinjaBuild{
 			Rule:      "compile",
 			Inputs:    []string{source},
 			Outputs:   []string{obj},
@@ -130,10 +178,8 @@ func (generator *NinjaGenerator) Generate(env *Environment, conf *Config) {
 	generator.AddRule(&NinjaRule{
 		Name:    "compile",
 		Command: "clang -MMD -MF $out.d $defines $include_dirs $cflags -c $in -o $out",
-		DepOption: &NinjaDepOption{
-			Deps:    "gcc",
-			DepFile: "$out.d",
-		},
+		Deps:    "gcc",
+		DepFile: "$out.d",
 	})
 	generator.AddRule(&NinjaRule{
 		Name:    "link",
@@ -159,7 +205,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, conf *Config) {
 			ldflags = append(ldflags, "-l"+dep)
 		}
 		executableFile := filepath.Join(env.OutDir, "bin", executable.Name)
-		generator.AddEdge(&BuildEdge{
+		generator.AddEdge(&NinjaBuild{
 			Rule:    "link",
 			Inputs:  append(objFiles, libraryFiles...),
 			Outputs: []string{executableFile},
@@ -172,7 +218,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, conf *Config) {
 	for _, executable := range conf.StaticLibraries {
 		objFiles := compileSources(env, &executable, generator)
 		libFile := filepath.Join(env.OutDir, "bin", "lib"+executable.Name+".a")
-		generator.AddEdge(&BuildEdge{
+		generator.AddEdge(&NinjaBuild{
 			Rule:    "archive",
 			Inputs:  objFiles,
 			Outputs: []string{libFile},
