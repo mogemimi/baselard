@@ -19,7 +19,7 @@ type Executable struct {
 	Dependencies []string `toml:"deps"`
 }
 
-type Config struct {
+type Manifest struct {
 	Imports         []string     `toml:"import"`
 	StaticLibraries []Executable `toml:"static_library"`
 	Executables     []Executable `toml:"executable"`
@@ -54,7 +54,7 @@ func (e *Executable) NormalizePaths(base string) {
 	}
 }
 
-func (conf *Config) NormalizePaths(configFile string) {
+func (conf *Manifest) NormalizePaths(configFile string) {
 	base := filepath.Dir(configFile)
 
 	for i := range conf.Imports {
@@ -84,67 +84,96 @@ func normalizeConfigFile(filename string) (string, error) {
 }
 
 func main() {
-	var configFile string
+	var manifestFile string
 
-	flag.StringVar(&configFile, "f", "", "specify a config file.")
+	flag.StringVar(&manifestFile, "f", "", "specify a manifest file.")
 	flag.Parse()
 
-	if len(configFile) == 0 {
-		log.Fatalln("error: Please specify a configuration file.")
+	if len(manifestFile) == 0 {
+		log.Fatalln("error: Please specify a manifest file.")
 	}
 
-	var rootConf Config
+	manifestMap := map[string]*Manifest{}
+	edgeMap := map[string]*Edge{}
+	executableMap := map[string]Executable{}
 
-	configMap := map[string]*Config{}
+	manifestFiles := []string{manifestFile}
+	for len(manifestFiles) > 0 {
+		manifestFile, manifestFiles = manifestFiles[0], manifestFiles[1:]
 
-	configFiles := []string{configFile}
-	for len(configFiles) > 0 {
-		configFile, configFiles = configFiles[0], configFiles[1:]
-
-		normalized, err := normalizeConfigFile(configFile)
+		normalized, err := normalizeConfigFile(manifestFile)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		if configMap[normalized] != nil {
+		if manifestMap[normalized] != nil {
 			// NOTE: Skip text that are already read.
 			continue
 		}
 
-		if _, err := os.Stat(configFile); os.IsNotExist(err) {
-			log.Fatalf("error: %s does not exist.", configFile)
+		if _, err := os.Stat(manifestFile); os.IsNotExist(err) {
+			log.Fatalf("error: %s does not exist.", manifestFile)
 		}
 
-		var conf Config
-		if _, err := toml.DecodeFile(configFile, &conf); err != nil {
+		var manifest Manifest
+		if _, err := toml.DecodeFile(manifestFile, &manifest); err != nil {
 			fmt.Println(err)
 			return
 		}
-		conf.NormalizePaths(configFile)
+		manifest.NormalizePaths(manifestFile)
 
-		configMap[normalized] = &conf
-		rootConf.Executables = append(rootConf.Executables, conf.Executables...)
-		rootConf.StaticLibraries = append(rootConf.StaticLibraries, conf.StaticLibraries...)
+		for _, p := range manifest.Executables {
+			edge := &Edge{
+				Name:        p.Name,
+				Type:        "executable",
+				Headers:     p.Headers,
+				Sources:     p.Sources,
+				IncludeDirs: p.IncludeDirs,
+				Defines:     p.Defines,
+			}
+			edgeMap[p.Name] = edge
+			executableMap[p.Name] = p
+		}
 
-		configFiles = append(conf.Imports, configFiles...)
+		for _, p := range manifest.StaticLibraries {
+			edge := &Edge{
+				Name:        p.Name,
+				Type:        "static_library",
+				Headers:     p.Headers,
+				Sources:     p.Sources,
+				IncludeDirs: p.IncludeDirs,
+				Defines:     p.Defines,
+			}
+			edgeMap[p.Name] = edge
+			executableMap[p.Name] = p
+		}
+
+		manifestMap[normalized] = &manifest
+		manifestFiles = append(manifest.Imports, manifestFiles...)
 	}
 
-	var edges []*Edge
-	for _, p := range rootConf.Executables {
-		// TODO: not implemented
-		deps := []*Edge{}
+	depEdges := map[string]*Edge{}
 
-		edge := &Edge{
-			Name:         p.Name,
-			Type:         "executable",
-			Headers:      p.Headers,
-			Sources:      p.Sources,
-			IncludeDirs:  p.IncludeDirs,
-			Defines:      p.Defines,
-			Dependencies: deps,
+	for name, edge := range edgeMap {
+		executable := executableMap[name]
+		deps := make([]*Edge, 0, len(executable.Dependencies))
+		for _, v := range executable.Dependencies {
+			dep := edgeMap[v]
+			deps = append(deps, dep)
+			depEdges[dep.Name] = dep
 		}
-		edges = append(edges, edge)
+		edge.Dependencies = deps
+	}
+
+	sourceEdges := []*Edge{}
+
+	for name, edge := range edgeMap {
+		if depEdges[name] != nil {
+			// NOTE: This edge is not source.
+			continue
+		}
+		sourceEdges = append(sourceEdges, edge)
 	}
 
 	env := &Environment{
@@ -152,7 +181,7 @@ func main() {
 	}
 
 	generator := &NinjaGenerator{}
-	generator.Generate(env, &rootConf)
+	generator.Generate(env, edgeMap)
 
 	ninjaFile := "build.ninja"
 

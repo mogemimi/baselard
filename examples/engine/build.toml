@@ -2,8 +2,11 @@ import = [
   "../vectormath/build.toml",
 ]
 
-[[executable]]
+[[static_library]]
 name = "engine"
+deps = [
+  "vectormath",
+]
 include_dirs = [
   "include",
   "../vectormath/include",

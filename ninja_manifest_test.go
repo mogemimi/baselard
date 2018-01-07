@@ -56,8 +56,7 @@ func TestToString1Out2Ins(t *testing.T) {
 		Inputs:  []string{"c", "d"},
 	}
 	actual := s.ToString()
-	expected := `build $
-  a: b $
+	expected := `build a: b $
   c $
   d
 `
@@ -120,8 +119,7 @@ func TestToStringMultipleImplicitDeps(t *testing.T) {
 		ImplicitDeps: []string{"c", "d"},
 	}
 	actual := s.ToString()
-	expected := `build $
-  a: b | $
+	expected := `build a: b | $
   c $
   d
 `
