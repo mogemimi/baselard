@@ -11,44 +11,41 @@ import (
 )
 
 type Tagged struct {
-	Headers      []string `toml:"headers"`
-	Sources      []string `toml:"sources"`
-	IncludeDirs  []string `toml:"include_dirs"`
-	Defines      []string `toml:"defines"`
-	Dependencies []string `toml:"deps"`
+	Headers       []string `toml:"headers"`
+	Sources       []string `toml:"sources"`
+	IncludeDirs   []string `toml:"include_dirs"`
+	LibDirs       []string `toml:"lib_dirs"`
+	Defines       []string `toml:"defines"`
+	Dependencies  []string `toml:"deps"`
+	CompilerFlags []string `toml:"cflags"`
+	LinkerFlags   []string `toml:"ldflags"`
 }
 
-type Executable struct {
-	Name         string            `toml:"name"`
-	Headers      []string          `toml:"headers"`
-	Sources      []string          `toml:"sources"`
-	IncludeDirs  []string          `toml:"include_dirs"`
-	Defines      []string          `toml:"defines"`
-	Dependencies []string          `toml:"deps"`
-	Tagged       map[string]Tagged `toml:"tagged"`
+type Target struct {
+	Name          string            `toml:"name"`
+	Type          string            `toml:"type"`
+	Headers       []string          `toml:"headers"`
+	Sources       []string          `toml:"sources"`
+	IncludeDirs   []string          `toml:"include_dirs"`
+	LibDirs       []string          `toml:"lib_dirs"`
+	Defines       []string          `toml:"defines"`
+	CompilerFlags []string          `toml:"cflags"`
+	LinkerFlags   []string          `toml:"ldflags"`
+	Dependencies  []string          `toml:"deps"`
+	Configs       []string          `toml:"configs"`
+	Tagged        map[string]Tagged `toml:"tagged"`
 }
 
 type Manifest struct {
-	Imports         []string     `toml:"import"`
-	StaticLibraries []Executable `toml:"static_library"`
-	Executables     []Executable `toml:"executable"`
-}
-
-type Edge struct {
-	Name         string
-	Type         string
-	Headers      []string
-	Sources      []string
-	IncludeDirs  []string
-	Defines      []string
-	Dependencies []*Edge
+	Imports []string `toml:"import"`
+	Targets []Target `toml:"targets"`
 }
 
 type Environment struct {
 	OutDir string
 }
 
-func (e *Executable) NormalizePaths(base string) {
+func (e *Target) NormalizePaths(base string) {
 	for i := range e.Sources {
 		src := &e.Sources[i]
 		*src = filepath.Clean(filepath.Join(base, *src))
@@ -61,6 +58,10 @@ func (e *Executable) NormalizePaths(base string) {
 		src := &e.IncludeDirs[i]
 		*src = filepath.Clean(filepath.Join(base, *src))
 	}
+	for i := range e.LibDirs {
+		src := &e.LibDirs[i]
+		*src = filepath.Clean(filepath.Join(base, *src))
+	}
 }
 
 func (conf *Manifest) NormalizePaths(configFile string) {
@@ -70,13 +71,9 @@ func (conf *Manifest) NormalizePaths(configFile string) {
 		src := &conf.Imports[i]
 		*src = filepath.Clean(filepath.Join(base, *src))
 	}
-	for i := range conf.Executables {
-		executable := &conf.Executables[i]
-		executable.NormalizePaths(base)
-	}
-	for i := range conf.StaticLibraries {
-		executable := &conf.StaticLibraries[i]
-		executable.NormalizePaths(base)
+	for i := range conf.Targets {
+		target := &conf.Targets[i]
+		target.NormalizePaths(base)
 	}
 }
 
@@ -103,8 +100,8 @@ func main() {
 	}
 
 	manifestMap := map[string]*Manifest{}
-	edgeMap := map[string]*Edge{}
-	executableMap := map[string]Executable{}
+	edges := map[string]*Edge{}
+	targets := map[string]Target{}
 
 	manifestFiles := []string{manifestFile}
 	for len(manifestFiles) > 0 {
@@ -132,30 +129,34 @@ func main() {
 		}
 		manifest.NormalizePaths(manifestFile)
 
-		for _, p := range manifest.Executables {
-			edge := &Edge{
-				Name:        p.Name,
-				Type:        "executable",
-				Headers:     p.Headers,
-				Sources:     p.Sources,
-				IncludeDirs: p.IncludeDirs,
-				Defines:     p.Defines,
-			}
-			edgeMap[p.Name] = edge
-			executableMap[p.Name] = p
-		}
+		for _, target := range manifest.Targets {
+			outputType := func() OutputType {
+				switch target.Type {
+				case "executable":
+					return OutputTypeExecutable
+				case "static_library":
+					return OutputTypeStaticLibrary
+				}
+				if len(target.Type) > 0 {
+					fmt.Println("warning: Unknown type", target.Type)
+				}
+				return OutputTypeUnknown
+			}()
 
-		for _, p := range manifest.StaticLibraries {
 			edge := &Edge{
-				Name:        p.Name,
-				Type:        "static_library",
-				Headers:     p.Headers,
-				Sources:     p.Sources,
-				IncludeDirs: p.IncludeDirs,
-				Defines:     p.Defines,
+				Name:          target.Name,
+				Type:          outputType,
+				Headers:       target.Headers,
+				Sources:       target.Sources,
+				IncludeDirs:   target.IncludeDirs,
+				LibDirs:       target.LibDirs,
+				Defines:       target.Defines,
+				CompilerFlags: target.CompilerFlags,
+				LinkerFlags:   target.LinkerFlags,
 			}
-			edgeMap[p.Name] = edge
-			executableMap[p.Name] = p
+
+			edges[target.Name] = edge
+			targets[target.Name] = target
 		}
 
 		manifestMap[normalized] = &manifest
@@ -164,20 +165,25 @@ func main() {
 
 	depEdges := map[string]*Edge{}
 
-	for name, edge := range edgeMap {
-		executable := executableMap[name]
-		deps := make([]*Edge, 0, len(executable.Dependencies))
-		for _, v := range executable.Dependencies {
-			dep := edgeMap[v]
-			deps = append(deps, dep)
+	for name, edge := range edges {
+		target := targets[name]
+		edge.Dependencies = make([]*Edge, 0, len(target.Dependencies))
+		for _, v := range target.Dependencies {
+			dep := edges[v]
+			edge.Dependencies = append(edge.Dependencies, dep)
 			depEdges[dep.Name] = dep
 		}
-		edge.Dependencies = deps
+
+		edge.Configs = make([]*Edge, 0, len(target.Configs))
+		for _, v := range target.Configs {
+			config := edges[v]
+			edge.Configs = append(edge.Configs, config)
+		}
 	}
 
 	sourceEdges := []*Edge{}
 
-	for name, edge := range edgeMap {
+	for name, edge := range edges {
 		if depEdges[name] != nil {
 			// NOTE: This edge is not source.
 			continue
@@ -190,7 +196,7 @@ func main() {
 	}
 
 	generator := &NinjaGenerator{}
-	generator.Generate(env, edgeMap)
+	generator.Generate(env, edges)
 
 	ninjaFile := "build.ninja"
 

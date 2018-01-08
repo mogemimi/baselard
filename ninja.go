@@ -38,23 +38,24 @@ func joinNinjaOptions(prefix string, options []string) string {
 }
 
 func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (objFiles []string) {
-	for _, source := range edge.Sources {
+	sources := edge.GetSources()
+	includeDirs := edge.GetIncludeDirs()
+	defines := edge.GetDefines()
+
+	for _, source := range sources {
 		obj := filepath.Clean(filepath.Join(env.OutDir, "obj", source+".o"))
 		objFiles = append(objFiles, obj)
 
 		variables := map[string]string{}
-		if len(edge.IncludeDirs) > 0 {
-			variables["include_dirs"] = joinNinjaOptions("-I", edge.IncludeDirs)
+		if len(includeDirs) > 0 {
+			variables["include_dirs"] = joinNinjaOptions("-I", includeDirs)
 		}
-		if len(edge.Defines) > 0 {
-			variables["defines"] = joinNinjaOptions("-D", edge.Defines)
+		if len(defines) > 0 {
+			variables["defines"] = joinNinjaOptions("-D", defines)
 		}
 
-		cflags := []string{
-			"-Wall",
-			"-std=c++14",
-			"-target x86_64-apple-macosx10.11",
-		}
+		cflags := []string{}
+		cflags = append(cflags, edge.GetCompilerFlags()...)
 		variables["cflags"] = strings.Join(cflags, " ")
 
 		generator.AddEdge(&NinjaBuild{
@@ -90,18 +91,21 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 
 	for _, edge := range edges {
 		switch edge.Type {
-		case "executable":
+		case OutputTypeExecutable:
 			objFiles := compileSources(env, edge, generator)
 			libraryFiles := []string{}
 			ldflags := []string{
-				"-lSystem",
-				"-lc++",
-				"-macosx_version_min 10.11",
 				"-L" + filepath.Join(env.OutDir, "bin"),
+			}
+			for _, f := range edge.GetLinkerFlags() {
+				ldflags = append(ldflags, f)
+			}
+			for _, dir := range edge.GetLibDirs() {
+				ldflags = append(ldflags, "-L"+dir)
 			}
 			for _, dep := range edge.Dependencies {
 				switch dep.Type {
-				case "static_library":
+				case OutputTypeStaticLibrary:
 					lib := filepath.Join(env.OutDir, "bin", "lib"+dep.Name+".a")
 					libraryFiles = append(libraryFiles, lib)
 					ldflags = append(ldflags, "-l"+dep.Name)
@@ -117,12 +121,12 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 					"ldflags": strings.Join(ldflags, " "),
 				},
 			})
-		case "static_library":
+		case OutputTypeStaticLibrary:
 			objFiles := compileSources(env, edge, generator)
 			libraryFiles := []string{}
 			for _, dep := range edge.Dependencies {
 				switch dep.Type {
-				case "static_library":
+				case OutputTypeStaticLibrary:
 					lib := filepath.Join(env.OutDir, "bin", "lib"+dep.Name+".a")
 					libraryFiles = append(libraryFiles, lib)
 				}

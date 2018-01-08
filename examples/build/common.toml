@@ -1,0 +1,26 @@
+[[targets]]
+name = "common"
+cflags = [
+  "-Wall",
+  "-std=c++14",
+]
+
+[targets.tagged."mac"]
+cflags = [
+  "-target x86_64-apple-macosx10.11",
+]
+ldflags = [
+  "-lSystem",
+  "-lc++",
+  "-macosx_version_min 10.11",
+]
+
+[targets.tagged."debug"]
+defines = [
+  "DEBUG=1",
+]
+
+[targets.tagged."release"]
+defines = [
+  "NDEBUG=1",
+]
