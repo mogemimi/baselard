@@ -10,13 +10,22 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type Executable struct {
-	Name         string   `toml:"name"`
+type Tagged struct {
 	Headers      []string `toml:"headers"`
 	Sources      []string `toml:"sources"`
 	IncludeDirs  []string `toml:"include_dirs"`
 	Defines      []string `toml:"defines"`
 	Dependencies []string `toml:"deps"`
+}
+
+type Executable struct {
+	Name         string            `toml:"name"`
+	Headers      []string          `toml:"headers"`
+	Sources      []string          `toml:"sources"`
+	IncludeDirs  []string          `toml:"include_dirs"`
+	Defines      []string          `toml:"defines"`
+	Dependencies []string          `toml:"deps"`
+	Tagged       map[string]Tagged `toml:"tagged"`
 }
 
 type Manifest struct {

@@ -10,7 +10,6 @@ deps = [
 ]
 defines = [
   "USE_MATH=1",
-  "USE_SSE=1",
 ]
 include_dirs = [
   "include",
@@ -24,3 +23,56 @@ sources = [
   "src/Game.cpp",
   "src/main.cpp",
 ]
+
+[executable.tagged."windows"]
+defines = [
+  "_WIN32_WINNT=0x0602", # Windows 8 or later
+  "WIN32_LEAN_AND_MEAN",
+  "NOMINMAX",
+]
+headers = [
+  "include/engine/TimeSourceWindows.h",
+]
+sources = [
+  "src/TimeSourceWindows.cpp",
+]
+
+[executable.tagged."apple"]
+defines = [
+]
+headers = [
+  "include/engine/TimeSourceApple.h",
+]
+sources = [
+  "src/TimeSourceApple.cpp",
+]
+
+[executable.tagged."linux"]
+defines = [
+]
+headers = [
+  "include/engine/TimeSourceLinux.h",
+]
+sources = [
+  "src/TimeSourceLinux.cpp",
+]
+
+[executable.tagged."debug"]
+defines = [
+  "DEBUG=1",
+  "IS_RELEASE_BUILD=0",
+]
+
+[executable.tagged."release"]
+defines = [
+  "NDEBUG=1",
+  "IS_RELEASE_BUILD=1",
+]
+
+# [platform.win32]
+# cxx = "clang"
+# ar = "ar"
+
+# [platform.mac]
+# cxx = "clang"
+# ar = "libtool"

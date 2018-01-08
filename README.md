@@ -13,6 +13,14 @@ Requirements:
 
 - Go >= 1.9
 
+## Usage
+
+```shell
+$ cd path/to/baselard
+$ go build
+$ baselard -f examples/app/build.toml
+```
+
 ## TODO
 
 #### Format
