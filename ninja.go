@@ -38,9 +38,9 @@ func joinNinjaOptions(prefix string, options []string) string {
 }
 
 func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (objFiles []string) {
-	sources := edge.GetSources()
-	includeDirs := edge.GetIncludeDirs()
-	defines := edge.GetDefines()
+	sources := edge.GetSources(env)
+	includeDirs := edge.GetIncludeDirs(env)
+	defines := edge.GetDefines(env)
 
 	for _, source := range sources {
 		obj := filepath.Clean(filepath.Join(env.OutDir, "obj", source+".o"))
@@ -55,7 +55,7 @@ func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (ob
 		}
 
 		cflags := []string{}
-		cflags = append(cflags, edge.GetCompilerFlags()...)
+		cflags = append(cflags, edge.GetCompilerFlags(env)...)
 		variables["cflags"] = strings.Join(cflags, " ")
 
 		generator.AddEdge(&NinjaBuild{
@@ -97,10 +97,10 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 			ldflags := []string{
 				"-L" + filepath.Join(env.OutDir, "bin"),
 			}
-			for _, f := range edge.GetLinkerFlags() {
+			for _, f := range edge.GetLinkerFlags(env) {
 				ldflags = append(ldflags, f)
 			}
-			for _, dir := range edge.GetLibDirs() {
+			for _, dir := range edge.GetLibDirs(env) {
 				ldflags = append(ldflags, "-L"+dir)
 			}
 			for _, dep := range edge.Dependencies {

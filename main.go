@@ -1,13 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/spf13/cobra"
 )
 
 type Tagged struct {
@@ -43,38 +43,14 @@ type Manifest struct {
 
 type Environment struct {
 	OutDir string
+	Tags   []string
 }
 
-func (e *Target) NormalizePaths(base string) {
-	for i := range e.Sources {
-		src := &e.Sources[i]
-		*src = filepath.Clean(filepath.Join(base, *src))
+func normalizePathList(base string, paths []string) (result []string) {
+	for _, filename := range paths {
+		result = append(result, filepath.Clean(filepath.Join(base, filename)))
 	}
-	for i := range e.Headers {
-		src := &e.Headers[i]
-		*src = filepath.Clean(filepath.Join(base, *src))
-	}
-	for i := range e.IncludeDirs {
-		src := &e.IncludeDirs[i]
-		*src = filepath.Clean(filepath.Join(base, *src))
-	}
-	for i := range e.LibDirs {
-		src := &e.LibDirs[i]
-		*src = filepath.Clean(filepath.Join(base, *src))
-	}
-}
-
-func (conf *Manifest) NormalizePaths(configFile string) {
-	base := filepath.Dir(configFile)
-
-	for i := range conf.Imports {
-		src := &conf.Imports[i]
-		*src = filepath.Clean(filepath.Join(base, *src))
-	}
-	for i := range conf.Targets {
-		target := &conf.Targets[i]
-		target.NormalizePaths(base)
-	}
+	return result
 }
 
 func normalizeConfigFile(filename string) (string, error) {
@@ -89,12 +65,7 @@ func normalizeConfigFile(filename string) (string, error) {
 	return filename, nil
 }
 
-func main() {
-	var manifestFile string
-
-	flag.StringVar(&manifestFile, "f", "", "specify a manifest file.")
-	flag.Parse()
-
+func generateNinja(manifestFile string, tags []string) {
 	if len(manifestFile) == 0 {
 		log.Fatalln("error: Please specify a manifest file.")
 	}
@@ -127,7 +98,9 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		manifest.NormalizePaths(manifestFile)
+
+		baseDir := filepath.Dir(manifestFile)
+		manifest.Imports = normalizePathList(baseDir, manifest.Imports)
 
 		for _, target := range manifest.Targets {
 			outputType := func() OutputType {
@@ -146,13 +119,26 @@ func main() {
 			edge := &Edge{
 				Name:          target.Name,
 				Type:          outputType,
-				Headers:       target.Headers,
-				Sources:       target.Sources,
-				IncludeDirs:   target.IncludeDirs,
-				LibDirs:       target.LibDirs,
+				Headers:       normalizePathList(baseDir, target.Headers),
+				Sources:       normalizePathList(baseDir, target.Sources),
+				IncludeDirs:   normalizePathList(baseDir, target.IncludeDirs),
+				LibDirs:       normalizePathList(baseDir, target.LibDirs),
 				Defines:       target.Defines,
 				CompilerFlags: target.CompilerFlags,
 				LinkerFlags:   target.LinkerFlags,
+			}
+
+			edge.Tagged = map[string]*Edge{}
+			for tag, tagged := range target.Tagged {
+				edge.Tagged[tag] = &Edge{
+					Headers:       normalizePathList(baseDir, tagged.Headers),
+					Sources:       normalizePathList(baseDir, tagged.Sources),
+					IncludeDirs:   normalizePathList(baseDir, tagged.IncludeDirs),
+					LibDirs:       normalizePathList(baseDir, tagged.LibDirs),
+					Defines:       tagged.Defines,
+					CompilerFlags: tagged.CompilerFlags,
+					LinkerFlags:   tagged.LinkerFlags,
+				}
 			}
 
 			edges[target.Name] = edge
@@ -193,6 +179,7 @@ func main() {
 
 	env := &Environment{
 		OutDir: "out",
+		Tags:   tags,
 	}
 
 	generator := &NinjaGenerator{}
@@ -206,4 +193,24 @@ func main() {
 	}
 
 	fmt.Println("Generate", ninjaFile)
+}
+
+func main() {
+	var manifestFile string
+	var tags []string
+
+	var ninjaCmd = &cobra.Command{
+		Use:   "ninja",
+		Short: "Generate ninja file",
+		Long:  `Ganerate ninja file.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			generateNinja(manifestFile, tags)
+		},
+	}
+	ninjaCmd.Flags().StringArrayVarP(&tags, "tag", "t", tags, "specify tags")
+
+	var rootCmd = &cobra.Command{Use: "baselard"}
+	rootCmd.PersistentFlags().StringVarP(&manifestFile, "file", "f", "", "specify a manifest file")
+	rootCmd.AddCommand(ninjaCmd)
+	rootCmd.Execute()
 }
