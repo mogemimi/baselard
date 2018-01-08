@@ -39,10 +39,19 @@ Requirements:
 ```shell
 $ cd path/to/baselard
 $ go build
+
+# For generally usage
 $ ./baselard ninja -f examples/app/build.toml
 
-# Build for macOS
+# Building C++ projects for macOS with Ninja
 $ ./baselard ninja -f examples/app/build.toml -t mac -t apple
+$ ninja
+
+# Generating Visual Studio projects (WIP)
+$ ./baselard msbuild -f examples/app/build.toml -o out
+
+# Generating Xcode projects (WIP)
+$ ./baselard xcode -f examples/app/build.toml -o out
 ```
 
 ## TODO
