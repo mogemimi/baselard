@@ -1,6 +1,6 @@
 #include <engine/TimeSourceWindows.h>
 #include <engine/PrerequisitesWindows.h>
-#include <assert>
+#include <cassert>
 
 namespace Engine {
 

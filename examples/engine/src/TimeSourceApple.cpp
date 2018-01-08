@@ -1,6 +1,6 @@
 #include <engine/TimeSourceApple.h>
 #include <mach/mach_time.h>
-#include <assert>
+#include <cassert>
 
 namespace Engine {
 

@@ -1,6 +1,6 @@
 #include <engine/TimeSourceLinux.h>
 #include <mach/mach_time.h>
-#include <assert>
+#include <cassert>
 
 namespace Engine {
 
