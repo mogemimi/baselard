@@ -28,3 +28,32 @@ sources = [
   "src/Game.cpp",
   "src/main.cpp",
 ]
+
+[targets.msbuild_settings.ClCompile]
+WarningLevel = "Level3"
+
+[targets.tagged."windows".msbuild_settings.User]
+DebuggerFlavor = "WindowsLocalDebugger"
+
+[[msbuild_projects]]
+name = "MyApp"
+
+[[msbuild_projects.configurations]]
+platform = "Win32"
+configuration = "Debug"
+tags = ["debug", "windows", "win32"]
+
+[[msbuild_projects.configurations]]
+platform = "Win32"
+configuration = "Release"
+tags = ["release", "windows", "win32"]
+
+[[msbuild_projects.configurations]]
+platform = "x64"
+configuration = "Debug"
+tags = ["debug", "windows", "x64"]
+
+[[msbuild_projects.configurations]]
+platform = "x64"
+configuration = "Release"
+tags = ["release", "windows", "x64"]
