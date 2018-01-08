@@ -25,7 +25,8 @@ A experimental build system for C++ projects. Still work in progress.
 ## Build
 
 ```shell
-$ go get github.com/BurntSushi/toml
+$ go get -u github.com/spf13/cobra/cobra
+$ go get -u github.com/BurntSushi/toml
 $ go build
 ```
 
@@ -38,7 +39,10 @@ Requirements:
 ```shell
 $ cd path/to/baselard
 $ go build
-$ baselard -f examples/app/build.toml
+$ ./baselard ninja -f examples/app/build.toml
+
+# Build for macOS
+$ ./baselard ninja -f examples/app/build.toml -t mac -t apple
 ```
 
 ## TODO
