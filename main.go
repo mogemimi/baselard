@@ -63,7 +63,7 @@ func normalizeConfigFile(filename string) (string, error) {
 	return filename, nil
 }
 
-func generateNinja(manifestFile string, tags []string) {
+func generateNinja(manifestFile string, ninjaFile string, tags []string) {
 	graph, err := parseGraph(manifestFile)
 	if err != nil {
 		log.Fatalln("error:", err)
@@ -77,8 +77,6 @@ func generateNinja(manifestFile string, tags []string) {
 	generator := &NinjaGenerator{}
 	generator.Generate(env, graph.edges)
 
-	ninjaFile := "build.ninja"
-
 	err = generator.WriteFile(ninjaFile)
 	if err != nil {
 		log.Fatalln("error:", err)
@@ -89,6 +87,7 @@ func generateNinja(manifestFile string, tags []string) {
 
 func main() {
 	var manifestFile string
+	var outputNinjaFile string
 	var tags []string
 
 	var ninjaCmd = &cobra.Command{
@@ -96,13 +95,22 @@ func main() {
 		Short: "Generate ninja file",
 		Long:  `Ganerate ninja file.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			generateNinja(manifestFile, tags)
+			generateNinja(manifestFile, outputNinjaFile, tags)
 		},
 	}
 	ninjaCmd.Flags().StringArrayVarP(&tags, "tag", "t", tags, "specify tags")
+	ninjaCmd.Flags().StringVarP(&outputNinjaFile, "out", "o", "build.ninja", "specify a output ninja file")
+
+	var msbuildCmd = &cobra.Command{
+		Use:   "msbuild",
+		Short: "Generate Visual Studio projects",
+		Long:  `Ganerate Visual Studio solution and project files.`,
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
 
 	var rootCmd = &cobra.Command{Use: "baselard"}
 	rootCmd.PersistentFlags().StringVarP(&manifestFile, "file", "f", "", "specify a manifest file")
-	rootCmd.AddCommand(ninjaCmd)
+	rootCmd.AddCommand(ninjaCmd, msbuildCmd)
 	rootCmd.Execute()
 }
