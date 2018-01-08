@@ -5,3 +5,4 @@ debug
 .ninja_log
 out
 build.ninja
+baselard
