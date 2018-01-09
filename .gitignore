@@ -1,8 +1,13 @@
 .DS_Store
-debug
 .vscode
+out
+
+# Executables
+debug
+baselard
+baselard.exe
+
+# Ninja
 .ninja_deps
 .ninja_log
-out
 build.ninja
-baselard
