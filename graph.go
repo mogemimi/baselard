@@ -14,7 +14,10 @@ type Graph struct {
 	sources []*Edge
 }
 
-func parseGraph(manifestFile string) (*Graph, error) {
+type GeneratorSettings struct {
+}
+
+func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 	if len(manifestFile) == 0 {
 		log.Fatalln("error: Please specify a manifest file.")
 	}
@@ -23,13 +26,15 @@ func parseGraph(manifestFile string) (*Graph, error) {
 	edges := map[string]*Edge{}
 	targets := map[string]Target{}
 
+	generatorSettings := &GeneratorSettings{}
+
 	manifestFiles := []string{manifestFile}
 	for len(manifestFiles) > 0 {
 		manifestFile, manifestFiles = manifestFiles[0], manifestFiles[1:]
 
 		normalized, err := normalizeConfigFile(manifestFile)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if manifestMap[normalized] != nil {
@@ -43,7 +48,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 
 		var manifest Manifest
 		if _, err := toml.DecodeFile(manifestFile, &manifest); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		baseDir := filepath.Dir(manifestFile)
@@ -64,27 +69,30 @@ func parseGraph(manifestFile string) (*Graph, error) {
 			}()
 
 			edge := &Edge{
-				Name:          target.Name,
-				Type:          outputType,
-				Headers:       normalizePathList(baseDir, target.Headers),
-				Sources:       normalizePathList(baseDir, target.Sources),
-				IncludeDirs:   normalizePathList(baseDir, target.IncludeDirs),
-				LibDirs:       normalizePathList(baseDir, target.LibDirs),
-				Defines:       target.Defines,
-				CompilerFlags: target.CompilerFlags,
-				LinkerFlags:   target.LinkerFlags,
+				Name:            target.Name,
+				Type:            outputType,
+				Headers:         normalizePathList(baseDir, target.Headers),
+				Sources:         normalizePathList(baseDir, target.Sources),
+				IncludeDirs:     normalizePathList(baseDir, target.IncludeDirs),
+				LibDirs:         normalizePathList(baseDir, target.LibDirs),
+				Defines:         target.Defines,
+				CompilerFlags:   target.CompilerFlags,
+				LinkerFlags:     target.LinkerFlags,
+				MSBuildSettings: target.MSBuildSettings,
+				MSBuildProject:  target.MSBuildProject,
 			}
 
 			edge.Tagged = map[string]*Edge{}
 			for tag, tagged := range target.Tagged {
 				edge.Tagged[tag] = &Edge{
-					Headers:       normalizePathList(baseDir, tagged.Headers),
-					Sources:       normalizePathList(baseDir, tagged.Sources),
-					IncludeDirs:   normalizePathList(baseDir, tagged.IncludeDirs),
-					LibDirs:       normalizePathList(baseDir, tagged.LibDirs),
-					Defines:       tagged.Defines,
-					CompilerFlags: tagged.CompilerFlags,
-					LinkerFlags:   tagged.LinkerFlags,
+					Headers:         normalizePathList(baseDir, tagged.Headers),
+					Sources:         normalizePathList(baseDir, tagged.Sources),
+					IncludeDirs:     normalizePathList(baseDir, tagged.IncludeDirs),
+					LibDirs:         normalizePathList(baseDir, tagged.LibDirs),
+					Defines:         tagged.Defines,
+					CompilerFlags:   tagged.CompilerFlags,
+					LinkerFlags:     tagged.LinkerFlags,
+					MSBuildSettings: tagged.MSBuildSettings,
 				}
 			}
 
@@ -128,5 +136,5 @@ func parseGraph(manifestFile string) (*Graph, error) {
 		edges:   edges,
 		sources: sourceEdges,
 	}
-	return graph, nil
+	return graph, generatorSettings, nil
 }

@@ -24,3 +24,25 @@ defines = [
 defines = [
   "NDEBUG=1",
 ]
+
+[targets.msbuild_project]
+
+[[targets.msbuild_project.configurations]]
+platform = "Win32"
+configuration = "Debug"
+tags = ["debug", "windows", "win32"]
+
+[[targets.msbuild_project.configurations]]
+platform = "Win32"
+configuration = "Release"
+tags = ["release", "windows", "win32"]
+
+[[targets.msbuild_project.configurations]]
+platform = "x64"
+configuration = "Debug"
+tags = ["debug", "windows", "x64"]
+
+[[targets.msbuild_project.configurations]]
+platform = "x64"
+configuration = "Release"
+tags = ["release", "windows", "x64"]

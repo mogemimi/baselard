@@ -34,6 +34,7 @@ type Target struct {
 	Dependencies    []string          `toml:"deps"`
 	Configs         []string          `toml:"configs"`
 	Tagged          map[string]Tagged `toml:"tagged"`
+	MSBuildProject  MSBuildProject    `toml:"msbuild_project"`
 }
 
 type MSBuildSettings struct {
@@ -54,14 +55,12 @@ type MSBuildProjectConfiguration struct {
 }
 
 type MSBuildProject struct {
-	Name           string                        `toml:"name"`
 	Configurations []MSBuildProjectConfiguration `toml:"configurations"`
 }
 
 type Manifest struct {
-	Imports        []string         `toml:"import"`
-	Targets        []Target         `toml:"targets"`
-	MSBuildProject []MSBuildProject `toml:"msbuild_projects"`
+	Imports []string `toml:"import"`
+	Targets []Target `toml:"targets"`
 }
 
 type Environment struct {
@@ -89,7 +88,7 @@ func normalizeConfigFile(filename string) (string, error) {
 }
 
 func generateNinja(manifestFile string, ninjaFile string, tags []string) {
-	graph, err := parseGraph(manifestFile)
+	graph, _, err := parseGraph(manifestFile)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
@@ -111,17 +110,17 @@ func generateNinja(manifestFile string, ninjaFile string, tags []string) {
 }
 
 func generateMSBuild(manifestFile string) {
-	// graph, err := parseGraph(manifestFile)
-	// if err != nil {
-	// 	log.Fatalln("error:", err)
-	// }
+	graph, generatorSettings, err := parseGraph(manifestFile)
+	if err != nil {
+		log.Fatalln("error:", err)
+	}
 
-	// env := &Environment{
-	// 	OutDir: "out",
-	// }
+	env := &Environment{
+		OutDir: "out",
+	}
 
-	// generator := &MSBuildGenerator{}
-	//generator.Generate(env, graph.edges)
+	generator := &MSBuildGenerator{}
+	generator.Generate(env, graph, generatorSettings)
 
 	// err = generator.WriteFile()
 	// if err != nil {
@@ -152,6 +151,7 @@ func main() {
 		Short: "Generate Visual Studio projects",
 		Long:  `Ganerate Visual Studio solution and project files.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			generateMSBuild(manifestFile)
 		},
 	}
 
