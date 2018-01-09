@@ -145,7 +145,7 @@ func main() {
 		},
 	}
 	ninjaCmd.Flags().StringArrayVarP(&tags, "tag", "t", tags, "specify tags")
-	ninjaCmd.Flags().StringVarP(&outputNinjaFile, "out", "o", "build.ninja", "specify a output ninja file")
+	ninjaCmd.Flags().StringVarP(&outputNinjaFile, "file", "f", "build.ninja", "specify a output ninja file")
 
 	var msbuildCmd = &cobra.Command{
 		Use:   "msbuild",
@@ -156,7 +156,7 @@ func main() {
 	}
 
 	var rootCmd = &cobra.Command{Use: "baselard"}
-	rootCmd.PersistentFlags().StringVarP(&manifestFile, "file", "f", "", "specify a manifest file")
+	rootCmd.PersistentFlags().StringVarP(&manifestFile, "input", "i", "", "specify a manifest file")
 	rootCmd.AddCommand(ninjaCmd, msbuildCmd)
 	rootCmd.Execute()
 }
