@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 type MSBuildGenerator struct {
@@ -43,8 +45,15 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 	}
 }
 
-func (gen *MSBuildGenerator) WriteFile(ninjaFile string) error {
-	file, err := os.Create(ninjaFile)
+func (gen *MSBuildGenerator) WriteFile(outputPath string) error {
+	dir := filepath.Dir(outputPath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return errors.Wrapf(err, "Failed to create output directory \"%s\"", dir)
+		}
+	}
+
+	file, err := os.Create(outputPath)
 	if err != nil {
 		return err
 	}

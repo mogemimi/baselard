@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type NinjaGenerator struct {
@@ -142,6 +144,13 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 }
 
 func (gen *NinjaGenerator) WriteFile(ninjaFile string) error {
+	dir := filepath.Dir(ninjaFile)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return errors.Wrapf(err, "Failed to create output directory \"%s\"", dir)
+		}
+	}
+
 	file, err := os.Create(ninjaFile)
 	if err != nil {
 		return err
