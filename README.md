@@ -27,6 +27,7 @@ A experimental build system for C++ projects. Still work in progress.
 ```shell
 $ go get -u github.com/spf13/cobra/cobra
 $ go get -u github.com/BurntSushi/toml
+$ go get -u github.com/pkg/errors
 $ go build
 ```
 
@@ -65,7 +66,7 @@ $ ./baselard xcode -i examples/app/build.toml -o out
 #### Generator
 
 - [x] Ninja
-- [ ] MSBuild and Visual Studio
+- [x] MSBuild and Visual Studio
 - [ ] CMake
 - [ ] Xcode
 - [ ] qmake

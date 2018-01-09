@@ -122,10 +122,10 @@ func generateMSBuild(manifestFile string) {
 	generator := &MSBuildGenerator{}
 	generator.Generate(env, graph, generatorSettings)
 
-	// err = generator.WriteFile()
-	// if err != nil {
-	// 	log.Fatalln("error:", err)
-	// }
+	err = generator.WriteFile(env.OutDir)
+	if err != nil {
+		log.Fatalln("error:", err)
+	}
 
 	fmt.Println("Generate Visual Studio project")
 }
