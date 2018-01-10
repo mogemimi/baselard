@@ -17,7 +17,7 @@ include_dirs = [
   "../vectormath/include",
 ]
 headers = [
-  "include/engine.h",
+  "include/engine/engine.h",
 ]
 sources = [
   "src/engine.cpp",
@@ -65,11 +65,3 @@ defines = [
 defines = [
   "IS_RELEASE_BUILD=1",
 ]
-
-# [platform.win32]
-# cxx = "clang"
-# ar = "ar"
-
-# [platform.mac]
-# cxx = "clang"
-# ar = "libtool"

@@ -28,6 +28,7 @@ A experimental build system for C++ projects. Still work in progress.
 $ go get -u github.com/spf13/cobra/cobra
 $ go get -u github.com/BurntSushi/toml
 $ go get -u github.com/pkg/errors
+$ go get -u github.com/satori/go.uuid
 $ go build
 ```
 
@@ -66,7 +67,13 @@ $ ./baselard xcode -i examples/app/build.toml -o out
 #### Generator
 
 - [x] Ninja
+  - [ ] Switch compilers between gcc and clang
 - [x] MSBuild and Visual Studio
+  - [x] Project dependencies
+  - [x] `*.sln`
+  - [x] `*.vcxproj`
+  - [x] `*.vcxproj.filters`
+    - [ ] Hierarchical Filters
 - [ ] CMake
 - [ ] Xcode
 - [ ] qmake

@@ -64,8 +64,9 @@ type Manifest struct {
 }
 
 type Environment struct {
-	OutDir string
-	Tags   []string
+	OutDir         string
+	ProjectFileDir string
+	Tags           []string
 }
 
 func normalizePathList(base string, paths []string) (result []string) {
@@ -94,8 +95,9 @@ func generateNinja(manifestFile string, ninjaFile string, tags []string) {
 	}
 
 	env := &Environment{
-		OutDir: "out",
-		Tags:   tags,
+		OutDir:         "out",
+		ProjectFileDir: filepath.Dir(ninjaFile),
+		Tags:           tags,
 	}
 
 	generator := &NinjaGenerator{}
@@ -116,13 +118,14 @@ func generateMSBuild(manifestFile string) {
 	}
 
 	env := &Environment{
-		OutDir: "out",
+		OutDir:         "out",
+		ProjectFileDir: "out",
 	}
 
 	generator := &MSBuildGenerator{}
 	generator.Generate(env, graph, generatorSettings)
 
-	err = generator.WriteFile(env.OutDir)
+	err = generator.WriteFile(env)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}

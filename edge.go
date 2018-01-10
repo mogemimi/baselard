@@ -10,6 +10,7 @@ const (
 	OutputTypeUnknown OutputType = iota
 	OutputTypeExecutable
 	OutputTypeStaticLibrary
+	OutputTypeDynamicLibrary
 )
 
 type Edge struct {
