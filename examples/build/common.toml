@@ -67,6 +67,12 @@ LinkIncremental = "true"
 LinkIncremental = "false"
 
 [targets.msbuild_project]
+ExtensionSettings = [
+  # '$(VCTargetsPath)\BuildCustomizations\MyCustom.props',
+]
+ExtensionTargets = [
+  # '$(VCTargetsPath)\BuildCustomizations\MyCustom.targets',
+]
 
 [[targets.msbuild_project.configurations]]
 platform = "Win32"
