@@ -1,12 +1,8 @@
-import = [
-  "../build/common.toml",
-]
-
 [[targets]]
 name = "vectormath"
 type = "static_library"
 configs = [
-  "common",
+  "../build/common.toml:common",
 ]
 include_dirs = [
   "include",

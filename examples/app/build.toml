@@ -1,17 +1,11 @@
-import = [
-  "../engine/build.toml",
-  "../vectormath/build.toml",
-  "../build/common.toml",
-]
-
 [[targets]]
 name = "app"
 type = "executable"
 configs = [
-  "common",
+  "../build/common.toml:common",
 ]
 deps = [
-  "engine",
+  "../engine/build.toml:engine",
 ]
 defines = [
   "USE_MATH=1",

@@ -38,28 +38,33 @@ type Target struct {
 }
 
 type MSBuildSettings struct {
-	ClCompile         map[string]string `toml:"ClCompile"`
-	Link              map[string]string `toml:"Link"`
-	Lib               map[string]string `toml:"Lib"`
-	Globals           map[string]string `toml:"Globals"`
-	Configuration     map[string]string `toml:"Configuration"`
-	User              map[string]string `toml:"User"`
-	General           map[string]string `toml:"General"`
-	ExtensionSettings []string          `toml:"ExtensionSettings"`
+	ClCompile     map[string]string `toml:"ClCompile"`
+	Link          map[string]string `toml:"Link"`
+	Lib           map[string]string `toml:"Lib"`
+	Globals       map[string]string `toml:"Globals"`
+	Configuration map[string]string `toml:"Configuration"`
+	User          map[string]string `toml:"User"`
+	General       map[string]string `toml:"General"`
 }
 
 type MSBuildProjectConfiguration struct {
 	Platform      string   `toml:"platform"`
 	Configuration string   `toml:"configuration"`
 	Tags          []string `toml:"tags"`
+
+	// TODO: Move the following definitions to out of MSBuildProjectConfiguration
+	ExecutableExtension     string `toml:"executable_extension"`
+	StaticLibraryExtension  string `toml:"static_library_extension"`
+	DynamicLibraryExtension string `toml:"dynamic_library_extension"`
 }
 
 type MSBuildProject struct {
-	Configurations []MSBuildProjectConfiguration `toml:"configurations"`
+	Configurations    []MSBuildProjectConfiguration `toml:"configurations"`
+	ExtensionSettings []string                      `toml:"ExtensionSettings"`
+	ExtensionTargets  []string                      `toml:"ExtensionTargets"`
 }
 
 type Manifest struct {
-	Imports []string `toml:"import"`
 	Targets []Target `toml:"targets"`
 }
 

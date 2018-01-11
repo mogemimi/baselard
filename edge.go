@@ -124,6 +124,9 @@ func (edge *Edge) GetLinkerFlags(env *Environment) (result []string) {
 func copyMSBuildProjectConfiguration(dst, src *MSBuildProjectConfiguration) {
 	dst.Configuration = src.Configuration
 	dst.Platform = src.Platform
+	dst.ExecutableExtension = src.ExecutableExtension
+	dst.StaticLibraryExtension = src.StaticLibraryExtension
+	dst.DynamicLibraryExtension = src.DynamicLibraryExtension
 	dst.Tags = make([]string, len(src.Tags))
 	copy(dst.Tags, src.Tags)
 }
@@ -135,6 +138,8 @@ func (edge *Edge) GetMSBuildProject(env *Environment) MSBuildProject {
 		copyMSBuildProjectConfiguration(&c, &v)
 		result.Configurations = append(result.Configurations, c)
 	}
+	result.ExtensionSettings = append(result.ExtensionSettings, edge.MSBuildProject.ExtensionSettings...)
+	result.ExtensionTargets = append(result.ExtensionTargets, edge.MSBuildProject.ExtensionTargets...)
 
 	configs := map[string]*MSBuildProjectConfiguration{}
 	for _, v := range result.Configurations {
@@ -154,6 +159,8 @@ func (edge *Edge) GetMSBuildProject(env *Environment) MSBuildProject {
 				result.Configurations = append(result.Configurations, c)
 			}
 		}
+		result.ExtensionSettings = append(result.ExtensionSettings, other.ExtensionSettings...)
+		result.ExtensionTargets = append(result.ExtensionTargets, other.ExtensionTargets...)
 	}
 	return result
 }
@@ -177,7 +184,6 @@ func mergeMSBuildSettings(a, b *MSBuildSettings) {
 	mergeMSBuildSettingsMap(&a.Configuration, &b.Configuration)
 	mergeMSBuildSettingsMap(&a.User, &b.User)
 	mergeMSBuildSettingsMap(&a.General, &b.General)
-	a.ExtensionSettings = append(a.ExtensionSettings, b.ExtensionSettings...)
 }
 
 func copyStringMap(s map[string]string) map[string]string {
@@ -196,9 +202,6 @@ func copyMSBuildSettings(dst, src *MSBuildSettings) {
 	dst.User = copyStringMap(src.User)
 	dst.General = copyStringMap(src.General)
 	dst.Configuration = copyStringMap(src.Configuration)
-
-	dst.ExtensionSettings = make([]string, len(src.ExtensionSettings))
-	copy(dst.ExtensionSettings, src.ExtensionSettings)
 }
 
 func (edge *Edge) GetMSBuildSettings(env *Environment) MSBuildSettings {

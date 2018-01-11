@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -15,6 +16,16 @@ type Graph struct {
 }
 
 type GeneratorSettings struct {
+}
+
+func splitManifestTarget(str string) (manifestFile, targetName string) {
+	s := strings.Split(str, ":")
+	if len(s) == 0 {
+		return manifestFile, targetName
+	}
+	manifestFile = strings.Join(s[:len(s)-1], ":")
+	targetName = s[len(s)-1]
+	return manifestFile, targetName
 }
 
 func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
@@ -52,7 +63,7 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		}
 
 		baseDir := filepath.Dir(manifestFile)
-		manifest.Imports = normalizePathList(baseDir, manifest.Imports)
+		requiredManifests := []string{}
 
 		for _, target := range manifest.Targets {
 			outputType := func() OutputType {
@@ -67,6 +78,16 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 				}
 				return OutputTypeUnknown
 			}()
+
+			for _, conf := range target.Configs {
+				configFile, _ := splitManifestTarget(conf)
+				requiredManifests = append(requiredManifests, configFile)
+			}
+			for _, conf := range target.Dependencies {
+				configFile, _ := splitManifestTarget(conf)
+				requiredManifests = append(requiredManifests, configFile)
+			}
+			requiredManifests = normalizePathList(baseDir, requiredManifests)
 
 			edge := &Edge{
 				Name:            target.Name,
@@ -101,7 +122,7 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		}
 
 		manifestMap[normalized] = &manifest
-		manifestFiles = append(manifest.Imports, manifestFiles...)
+		manifestFiles = append(requiredManifests, manifestFiles...)
 	}
 
 	depEdges := map[string]*Edge{}
@@ -110,14 +131,16 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		target := targets[name]
 		edge.Dependencies = make([]*Edge, 0, len(target.Dependencies))
 		for _, v := range target.Dependencies {
-			dep := edges[v]
+			_, depName := splitManifestTarget(v)
+			dep := edges[depName]
 			edge.Dependencies = append(edge.Dependencies, dep)
 			depEdges[dep.Name] = dep
 		}
 
 		edge.Configs = make([]*Edge, 0, len(target.Configs))
 		for _, v := range target.Configs {
-			config := edges[v]
+			_, configName := splitManifestTarget(v)
+			config := edges[configName]
 			edge.Configs = append(edge.Configs, config)
 		}
 	}

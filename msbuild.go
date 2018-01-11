@@ -22,91 +22,67 @@ type MSBuildProjectSource struct {
 	FilePath       string
 	Conditions     []string
 	DependProjects []string
-	Project        MSBuildXMLProject
-	ProjectFilters MSBuildXMLProject
-}
-
-type MSBuildXMLProject struct {
-	XMLName        xml.Name `xml:"Project"`
-	DefaultTargets string   `xml:"DefaultTargets,attr,omitempty"`
-	ToolsVersion   string   `xml:"ToolsVersion,attr"`
-	Xmlns          string   `xml:"xmlns,attr"`
-
-	ItemGroup           []MSBuildXMLItemGroup           `xml:"ItemGroup"`
-	PropertyGroup       []MSBuildXMLPropertyGroup       `xml:"PropertyGroup"`
-	ImportGroup         []MSBuildXMLImportGroup         `xml:"ImportGroup"`
-	Import              []MSBuildXMLImport              `xml:"Import"`
-	ItemDefinitionGroup []MSBuildXMLItemDefinitionGroup `xml:"ItemDefinitionGroup"`
-}
-
-type MSBuildXMLItemGroup struct {
-	XMLName              xml.Name                         `xml:"ItemGroup"`
-	Label                string                           `xml:"Label,attr,omitempty"`
-	Filter               []MSBuildXMLFilter               `xml:"Filter,omitempty"`
-	ProjectConfiguration []MSBuildXMLProjectConfiguration `xml:"ProjectConfiguration,omitempty"`
-	Text                 []MSBuildXMLItem                 `xml:"Text"`
-	ClInclude            []MSBuildXMLItem                 `xml:"ClInclude"`
-	ClCompile            []MSBuildXMLItem                 `xml:"ClCompile"`
-}
-
-type MSBuildXMLFilter struct {
-	Include          string `xml:"Include,attr,omitempty"`
-	UniqueIdentifier string `xml:"UniqueIdentifier"`
-	Extensions       string `xml:"Extensions"`
+	Project        MSBuildXMLElement
+	ProjectFilters MSBuildXMLElement
 }
 
 type MSBuildXMLExcludedFromBuild struct {
-	Condition string `xml:"Condition,attr,omitempty"`
-	Excluded  bool   `xml:",chardata"`
+	Condition string
+	Excluded  bool
 }
 
 type MSBuildXMLItem struct {
-	Include           string                        `xml:"Include,attr"`
-	ExcludedFromBuild []MSBuildXMLExcludedFromBuild `xml:"ExcludedFromBuild,omitempty"`
-	Filter            string                        `xml:"Filter,omitempty"`
+	Include           string
+	ExcludedFromBuild []MSBuildXMLExcludedFromBuild
+	Filter            string
 }
 
-type MSBuildXMLProjectConfiguration struct {
-	Include       string `xml:"Include,attr"`
-	Configuration string `xml:"Configuration,omitempty"`
-	Platform      string `xml:"Platform,omitempty"`
+type MSBuildXMLElement struct {
+	Name       string
+	Text       string
+	Attributes []MSBuildXMLAttribute
+	Elements   []*MSBuildXMLElement
 }
 
-type MSBuildXMLPropertyGroup struct {
-	Name     string
-	Attrs    map[string]string
-	Elements map[string]string
+type MSBuildXMLAttribute struct {
+	Key   string
+	Value string
 }
 
-func (u MSBuildXMLPropertyGroup) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func xmlAttr(key, value string) MSBuildXMLAttribute {
+	return MSBuildXMLAttribute{Key: key, Value: value}
+}
+
+func (proj *MSBuildXMLElement) SubElement(name string, attributes ...MSBuildXMLAttribute) *MSBuildXMLElement {
+	elem := &MSBuildXMLElement{
+		Name:       name,
+		Attributes: attributes,
+	}
+	proj.Elements = append(proj.Elements, elem)
+	return elem
+}
+
+func (proj *MSBuildXMLElement) SetText(text string) *MSBuildXMLElement {
+	proj.Text = text
+	return proj
+}
+
+func (u MSBuildXMLElement) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name.Local = u.Name
 	start.Attr = []xml.Attr{}
-	for k, v := range u.Attrs {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: k}, Value: v})
+	for _, attr := range u.Attributes {
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: attr.Key}, Value: attr.Value})
 	}
 	e.EncodeToken(start)
-	for k, v := range u.Elements {
-		e.EncodeElement(v, xml.StartElement{Name: xml.Name{Local: k}})
+	if len(u.Text) > 0 {
+		e.EncodeToken(xml.CharData(u.Text))
+	} else {
+		for _, elem := range u.Elements {
+			e.EncodeElement(elem, xml.StartElement{Name: xml.Name{Local: elem.Name}})
+		}
 	}
 	e.EncodeToken(start.End())
 	return nil
-}
-
-type MSBuildXMLItemDefinitionGroup struct {
-	Condition       string                    `xml:"Condition,attr,omitempty"`
-	ItemDefinitions []MSBuildXMLPropertyGroup `xml:",omitempty"`
-}
-
-type MSBuildXMLImport struct {
-	Project   string `xml:"Project,attr"`
-	Condition string `xml:"Condition,attr,omitempty"`
-	Label     string `xml:"Label,attr,omitempty"`
-}
-
-type MSBuildXMLImportGroup struct {
-	Condition string             `xml:"Condition,attr,omitempty"`
-	Label     string             `xml:"Label,attr,omitempty"`
-	Import    []MSBuildXMLImport `xml:"Import"`
 }
 
 func getClCompileSources(edge *Edge, project *MSBuildProject, env *Environment) (result []MSBuildXMLItem) {
@@ -200,81 +176,9 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 
 		project := edge.GetMSBuildProject(env)
 
-		projectSource.Project = MSBuildXMLProject{
-			DefaultTargets: "Build",
-			ToolsVersion:   "14.0",
-			Xmlns:          "http://schemas.microsoft.com/developer/msbuild/2003",
-		}
-
-		vcxproj := &projectSource.Project
-
-		vcxproj.ItemGroup = append(vcxproj.ItemGroup, MSBuildXMLItemGroup{
-			Label: "ProjectConfigurations",
-			ProjectConfiguration: func() (result []MSBuildXMLProjectConfiguration) {
-				for _, v := range project.Configurations {
-					result = append(result, MSBuildXMLProjectConfiguration{
-						Include:       fmt.Sprintf("%s|%s", v.Configuration, v.Platform),
-						Platform:      v.Platform,
-						Configuration: v.Configuration,
-					})
-				}
-				return result
-			}(),
-		})
-
-		vcxproj.PropertyGroup = append(vcxproj.PropertyGroup, MSBuildXMLPropertyGroup{
-			Name: "PropertyGroup",
-			Attrs: map[string]string{
-				"Label": "Globals",
-			},
-			Elements: map[string]string{
-				"ProjectGuid":                  fmt.Sprintf("{%s}", projectSource.GUID),
-				"Keyword":                      "Win32Proj",
-				"RootNamespace":                projectSource.Name,
-				"WindowsTargetPlatformVersion": "8.1",
-			},
-		})
-
-		vcxproj.Import = append(vcxproj.Import, MSBuildXMLImport{
-			Project: `$(VCTargetsPath)\Microsoft.Cpp.Default.props`,
-		})
-		vcxproj.Import = append(vcxproj.Import, MSBuildXMLImport{
-			Project: `$(VCTargetsPath)\Microsoft.Cpp.props`,
-		})
-		vcxproj.Import = append(vcxproj.Import, MSBuildXMLImport{
-			Project: `$(VCTargetsPath)\Microsoft.Cpp.targets`,
-		})
-
-		vcxproj.ImportGroup = append(vcxproj.ImportGroup, MSBuildXMLImportGroup{
-			Label: "ExtensionSettings",
-		})
-		vcxproj.ImportGroup = append(vcxproj.ImportGroup, MSBuildXMLImportGroup{
-			Label: "Shared",
-		})
-
-		for _, v := range project.Configurations {
-			vcxproj.ImportGroup = append(vcxproj.ImportGroup, MSBuildXMLImportGroup{
-				Label:     "PropertySheets",
-				Condition: fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s|%s'", v.Configuration, v.Platform),
-				Import: []MSBuildXMLImport{
-					{
-						Project:   `$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props`,
-						Condition: `exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')`,
-						Label:     "LocalAppDataPlatform",
-					},
-				},
-			})
-		}
-
-		vcxproj.PropertyGroup = append(vcxproj.PropertyGroup, MSBuildXMLPropertyGroup{
-			Name: "PropertyGroup",
-			Attrs: map[string]string{
-				"Label": "UserMacros",
-			},
-		})
-
-		var propertyGroupsConfiguration []MSBuildXMLPropertyGroup
-		var propertyGroupsGeneral []MSBuildXMLPropertyGroup
+		var propertyGroupsConfigurations []*MSBuildXMLElement
+		var propertyGroupsGenerals []*MSBuildXMLElement
+		var itemDefinitionGroups []*MSBuildXMLElement
 
 		configurationType := func() string {
 			switch edge.Type {
@@ -293,6 +197,16 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 			projectEnv.OutDir = env.OutDir
 			projectEnv.Tags = env.Tags
 			projectEnv.Tags = append(projectEnv.Tags, config.Tags...)
+
+			if len(config.ExecutableExtension) == 0 {
+				config.ExecutableExtension = ".exe"
+			}
+			if len(config.StaticLibraryExtension) == 0 {
+				config.StaticLibraryExtension = ".lib"
+			}
+			if len(config.DynamicLibraryExtension) == 0 {
+				config.DynamicLibraryExtension = ".dll"
+			}
 
 			msbuild := edge.GetMSBuildSettings(projectEnv)
 
@@ -345,7 +259,7 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 				str := ""
 				for _, dep := range edge.Dependencies {
 					if dep.Type == OutputTypeStaticLibrary {
-						str += (dep.Name + ".lib")
+						str += ("$(OutDir)" + dep.Name + config.StaticLibraryExtension)
 						str += ";"
 					}
 				}
@@ -356,51 +270,120 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 			conditionStr := fmt.Sprintf("%s|%s", config.Configuration, config.Platform)
 			projectSource.Conditions = append(projectSource.Conditions, conditionStr)
 
-			propertyGroupsConfiguration = append(propertyGroupsConfiguration, MSBuildXMLPropertyGroup{
+			configuration := &MSBuildXMLElement{
 				Name: "PropertyGroup",
-				Attrs: map[string]string{
-					"Condition": fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr),
-					"Label":     "Configuration",
+				Attributes: []MSBuildXMLAttribute{
+					xmlAttr("Condition", fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr)),
+					xmlAttr("Label", "Configuration"),
 				},
-				Elements: copyStringMap(msbuild.Configuration),
-			})
+			}
+			for k, v := range msbuild.Configuration {
+				configuration.SubElement(k).SetText(v)
+			}
+			propertyGroupsConfigurations = append(propertyGroupsConfigurations, configuration)
 
-			propertyGroupsGeneral = append(propertyGroupsGeneral, MSBuildXMLPropertyGroup{
+			propertyGroupsGeneral := &MSBuildXMLElement{
 				Name: "PropertyGroup",
-				Attrs: map[string]string{
-					"Condition": fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr),
+				Attributes: []MSBuildXMLAttribute{
+					xmlAttr("Condition", fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr)),
 				},
-				Elements: copyStringMap(msbuild.General),
-			})
+			}
+			for k, v := range msbuild.General {
+				configuration.SubElement(k).SetText(v)
+			}
+			propertyGroupsGenerals = append(propertyGroupsGenerals, propertyGroupsGeneral)
 
-			vcxproj.ItemDefinitionGroup = append(vcxproj.ItemDefinitionGroup, MSBuildXMLItemDefinitionGroup{
-				Condition: fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr),
-				ItemDefinitions: func() (result []MSBuildXMLPropertyGroup) {
-					if len(msbuild.ClCompile) > 0 {
-						result = append(result, MSBuildXMLPropertyGroup{
-							Name:     "ClCompile",
-							Elements: copyStringMap(msbuild.ClCompile),
-						})
-					}
-					if len(msbuild.Link) > 0 {
-						result = append(result, MSBuildXMLPropertyGroup{
-							Name:     "Link",
-							Elements: copyStringMap(msbuild.Link),
-						})
-					}
-					if len(msbuild.Lib) > 0 {
-						result = append(result, MSBuildXMLPropertyGroup{
-							Name:     "Lib",
-							Elements: copyStringMap(msbuild.Lib),
-						})
-					}
-					return result
-				}(),
-			})
+			itemDefinition := &MSBuildXMLElement{
+				Name: "ItemDefinitionGroup",
+				Attributes: []MSBuildXMLAttribute{
+					xmlAttr("Condition", fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s'", conditionStr)),
+				},
+			}
+
+			if len(msbuild.ClCompile) > 0 {
+				item := itemDefinition.SubElement("ClCompile")
+				for k, v := range msbuild.ClCompile {
+					item.SubElement(k).SetText(v)
+				}
+			}
+			if len(msbuild.Link) > 0 {
+				item := itemDefinition.SubElement("Link")
+				for k, v := range msbuild.Link {
+					item.SubElement(k).SetText(v)
+				}
+			}
+			if len(msbuild.Lib) > 0 {
+				item := itemDefinition.SubElement("Lib")
+				for k, v := range msbuild.Lib {
+					item.SubElement(k).SetText(v)
+				}
+			}
+
+			itemDefinitionGroups = append(itemDefinitionGroups, itemDefinition)
 		}
 
-		vcxproj.PropertyGroup = append(vcxproj.PropertyGroup, propertyGroupsConfiguration...)
-		vcxproj.PropertyGroup = append(vcxproj.PropertyGroup, propertyGroupsGeneral...)
+		projectSource.Project = MSBuildXMLElement{
+			Name: "Project",
+			Attributes: []MSBuildXMLAttribute{
+				xmlAttr("DefaultTargets", "Build"),
+				xmlAttr("ToolsVersion", "14.0"),
+				xmlAttr("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003"),
+			},
+		}
+
+		vcxproj := &projectSource.Project
+
+		{
+			configurations := vcxproj.SubElement("ItemGroup", xmlAttr("Label", "ProjectConfigurations"))
+			for _, v := range project.Configurations {
+				include := fmt.Sprintf("%s|%s", v.Configuration, v.Platform)
+				conf := configurations.SubElement("ProjectConfiguration", xmlAttr("Include", include))
+				conf.SubElement("Configuration").SetText(v.Configuration)
+				conf.SubElement("Platform").SetText(v.Platform)
+			}
+		}
+		{
+			globals := vcxproj.SubElement("PropertyGroup", xmlAttr("Label", "Globals"))
+			globals.SubElement("ProjectGuid").SetText(fmt.Sprintf("{%s}", projectSource.GUID))
+			globals.SubElement("Keyword").SetText("Win32Proj")
+			globals.SubElement("RootNamespace").SetText(projectSource.Name)
+			globals.SubElement("WindowsTargetPlatformVersion").SetText("8.1")
+		}
+
+		vcxproj.SubElement("Import", xmlAttr("Project", `$(VCTargetsPath)\Microsoft.Cpp.Default.props`))
+
+		vcxproj.Elements = append(vcxproj.Elements, propertyGroupsConfigurations...)
+
+		vcxproj.SubElement("Import", xmlAttr("Project", `$(VCTargetsPath)\Microsoft.Cpp.props`))
+		extensionSettings := vcxproj.SubElement("ImportGroup", xmlAttr("Label", "ExtensionSettings"))
+		for _, s := range project.ExtensionSettings {
+			extensionSettings.SubElement("Import", xmlAttr("Project", s))
+		}
+
+		vcxproj.SubElement("ImportGroup", xmlAttr("Label", "Shared"))
+
+		for _, v := range project.Configurations {
+			propertySheets := vcxproj.SubElement(
+				"ImportGroup",
+				xmlAttr("Label", "PropertySheets"),
+				xmlAttr("Condition", fmt.Sprintf("'$(Configuration)|$(Platform)'=='%s|%s'", v.Configuration, v.Platform)),
+			)
+			propertySheets.SubElement(
+				"Import",
+				xmlAttr("Project", `$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props`),
+				xmlAttr("Condition", `exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')`),
+				xmlAttr("Label", "LocalAppDataPlatform"),
+			)
+		}
+
+		vcxproj.SubElement("PropertyGroup", xmlAttr("Label", "UserMacros"))
+		if len(propertyGroupsGenerals) > 0 {
+			vcxproj.Elements = append(vcxproj.Elements, propertyGroupsGenerals...)
+		} else {
+			vcxproj.SubElement("PropertyGroup")
+		}
+
+		vcxproj.Elements = append(vcxproj.Elements, itemDefinitionGroups...)
 
 		clIncludeSources := func() (result []MSBuildXMLItem) {
 			for _, src := range edge.GetHeaders(env) {
@@ -409,46 +392,65 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 			}
 			return result
 		}()
-		vcxproj.ItemGroup = append(vcxproj.ItemGroup, MSBuildXMLItemGroup{
-			ClInclude: clIncludeSources,
-		})
+		{
+			itemGroup := vcxproj.SubElement("ItemGroup")
+			for _, v := range clIncludeSources {
+				itemGroup.SubElement("ClInclude", xmlAttr("Include", v.Include))
+			}
+		}
 
 		clCompileSources := getClCompileSources(edge, &project, env)
-		vcxproj.ItemGroup = append(vcxproj.ItemGroup, MSBuildXMLItemGroup{
-			ClCompile: clCompileSources,
-		})
+		{
+			itemGroup := vcxproj.SubElement("ItemGroup")
+			for _, v := range clCompileSources {
+				item := itemGroup.SubElement("ClCompile", xmlAttr("Include", v.Include))
+				for _, e := range v.ExcludedFromBuild {
+					item.SubElement("ExcludedFromBuild", xmlAttr("Condition", e.Condition)).SetText(fmt.Sprintf("%v", e.Excluded))
+				}
+			}
+		}
 
-		projectSource.ProjectFilters = MSBuildXMLProject{
-			ToolsVersion: "4.0",
-			Xmlns:        "http://schemas.microsoft.com/developer/msbuild/2003",
+		vcxproj.SubElement("Import", xmlAttr("Project", `$(VCTargetsPath)\Microsoft.Cpp.targets`))
+		extensionTargets := vcxproj.SubElement("ImportGroup", xmlAttr("Label", "ExtensionTargets"))
+		for _, s := range project.ExtensionTargets {
+			extensionTargets.SubElement("Import", xmlAttr("Project", s))
+		}
+
+		projectSource.ProjectFilters = MSBuildXMLElement{
+			Name: "Project",
+			Attributes: []MSBuildXMLAttribute{
+				xmlAttr("ToolsVersion", "4.0"),
+				xmlAttr("xmlns", "http://schemas.microsoft.com/developer/msbuild/2003"),
+			},
 		}
 
 		filters := &projectSource.ProjectFilters
-		filters.ItemGroup = append(filters.ItemGroup, MSBuildXMLItemGroup{
-			Filter: []MSBuildXMLFilter{
-				{
-					Include:          "Source Files",
-					UniqueIdentifier: "{4FC737F1-C7A5-4376-A066-2A32D752A2FF}",
-					Extensions:       "cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx",
-				},
-				{
-					Include:          "Header Files",
-					UniqueIdentifier: "{93995380-89BD-4b04-88EB-625FBE52EBFB}",
-					Extensions:       "h;hh;hpp;hxx;hm;inl;inc;xsd",
-				},
-			},
-		})
-
-		for _, s := range clIncludeSources {
-			filters.ItemGroup = append(filters.ItemGroup, MSBuildXMLItemGroup{
-				ClInclude: []MSBuildXMLItem{{Include: s.Include, Filter: "Graphics"}},
-			})
+		{
+			itemGroup := filters.SubElement("ItemGroup")
+			{
+				s := itemGroup.SubElement("Filter", xmlAttr("Include", "Source Files"))
+				s.SubElement("UniqueIdentifier").SetText("{4FC737F1-C7A5-4376-A066-2A32D752A2FF}")
+				s.SubElement("Extensions").SetText("cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx")
+			}
+			{
+				s := itemGroup.SubElement("Filter", xmlAttr("Include", "Header Files"))
+				s.SubElement("UniqueIdentifier").SetText("{93995380-89BD-4b04-88EB-625FBE52EBFB}")
+				s.SubElement("Extensions").SetText("h;hh;hpp;hxx;hm;inl;inc;xsd")
+			}
 		}
-
-		for _, s := range clCompileSources {
-			filters.ItemGroup = append(filters.ItemGroup, MSBuildXMLItemGroup{
-				ClCompile: []MSBuildXMLItem{{Include: s.Include, Filter: "Graphics"}},
-			})
+		{
+			itemGroup := filters.SubElement("ItemGroup")
+			for _, s := range clIncludeSources {
+				s := itemGroup.SubElement("ClInclude", xmlAttr("Include", s.Include))
+				s.SubElement("Filter").SetText("Graphics")
+			}
+		}
+		{
+			itemGroup := filters.SubElement("ItemGroup")
+			for _, s := range clCompileSources {
+				s := itemGroup.SubElement("ClCompile", xmlAttr("Include", s.Include))
+				s.SubElement("Filter").SetText("Graphics")
+			}
 		}
 	}
 }
@@ -468,6 +470,7 @@ func (gen *MSBuildGenerator) WriteFile(env *Environment) error {
 			}
 		}
 
+		const msbuildXMLHeader = `<?xml version="1.0" encoding="utf-8"?>` + "\n"
 		{
 			file, err := os.Create(outputPath)
 			if err != nil {
@@ -484,7 +487,7 @@ func (gen *MSBuildGenerator) WriteFile(env *Environment) error {
 			replacedXML := strings.Replace(string(xmlString), "&#39;", "'", -1)
 
 			writer := bufio.NewWriter(file)
-			writer.WriteString(xml.Header)
+			writer.WriteString(msbuildXMLHeader)
 			writer.WriteString(replacedXML)
 
 			writer.Flush()
@@ -507,7 +510,7 @@ func (gen *MSBuildGenerator) WriteFile(env *Environment) error {
 			replacedXML := strings.Replace(string(xmlString), "&#39;", "'", -1)
 
 			writer := bufio.NewWriter(file)
-			writer.WriteString(xml.Header)
+			writer.WriteString(msbuildXMLHeader)
 			writer.WriteString(replacedXML)
 
 			writer.Flush()
