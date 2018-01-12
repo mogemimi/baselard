@@ -50,7 +50,7 @@ $ ./baselard ninja -i examples/app/build.toml -t mac -t apple
 $ ninja
 
 # Generating Visual Studio projects
-$ ./baselard msbuild -i examples/app/build.toml
+$ ./baselard msbuild -i examples/app/build.toml -g out
 $ MSBuild.exe out/out.sln -t:Build -p:Configuration=Release
 
 # Generating Xcode projects (WIP)

@@ -521,7 +521,14 @@ func (gen *MSBuildGenerator) WriteFile(env *Environment) error {
 		solution.Projects = append(solution.Projects, projectSource)
 	}
 
-	generateMSBuildSolutionFile(env, solution)
+	solutionFilePath := filepath.Join(env.OutDir, solution.Name+".sln")
+	generateMSBuildSolutionFile(solutionFilePath, solution)
+
+	fmt.Println("Generate project files:")
+	fmt.Println(" ", solutionFilePath)
+	for _, projectSource := range gen.projects {
+		fmt.Println(" ", projectSource.FilePath)
+	}
 
 	return nil
 }

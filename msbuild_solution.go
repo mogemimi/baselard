@@ -33,9 +33,7 @@ type MSBuildSolution struct {
 	Projects []*MSBuildProjectSource
 }
 
-func generateMSBuildSolutionFile(env *Environment, solution *MSBuildSolution) (err error) {
-	solutionFilePath := filepath.Join(env.OutDir, solution.Name+".sln")
-
+func generateMSBuildSolutionFile(solutionFilePath string, solution *MSBuildSolution) (err error) {
 	for _, proj := range solution.Projects {
 		sort.Slice(proj.Conditions, func(i, j int) bool {
 			return proj.Conditions[i] < proj.Conditions[j]

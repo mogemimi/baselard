@@ -116,7 +116,7 @@ func generateNinja(manifestFile string, ninjaFile string, tags []string) {
 	fmt.Println("Generate", ninjaFile)
 }
 
-func generateMSBuild(manifestFile string) {
+func generateMSBuild(manifestFile, outputGenDir string) {
 	graph, generatorSettings, err := parseGraph(manifestFile)
 	if err != nil {
 		log.Fatalln("error:", err)
@@ -124,7 +124,7 @@ func generateMSBuild(manifestFile string) {
 
 	env := &Environment{
 		OutDir:         "out",
-		ProjectFileDir: "out",
+		ProjectFileDir: outputGenDir,
 	}
 
 	generator := &MSBuildGenerator{}
@@ -134,13 +134,12 @@ func generateMSBuild(manifestFile string) {
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
-
-	fmt.Println("Generate Visual Studio project")
 }
 
 func main() {
 	var manifestFile string
 	var outputNinjaFile string
+	var outputGenDir string
 	var tags []string
 
 	var ninjaCmd = &cobra.Command{
@@ -159,9 +158,10 @@ func main() {
 		Short: "Generate Visual Studio projects",
 		Long:  `Ganerate Visual Studio solution and project files.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			generateMSBuild(manifestFile)
+			generateMSBuild(manifestFile, outputGenDir)
 		},
 	}
+	msbuildCmd.Flags().StringVarP(&outputGenDir, "gen-dir", "g", "out", "specify a directory for generated project files")
 
 	var rootCmd = &cobra.Command{Use: "baselard"}
 	rootCmd.PersistentFlags().StringVarP(&manifestFile, "input", "i", "", "specify a manifest file")
