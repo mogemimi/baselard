@@ -22,6 +22,30 @@ A experimental build system for C++ projects. Still work in progress.
 
 ```
 
+```
+Build Configurations:
+  Debug
+  Release
+
+Platforms:
+  Windows (Win32/x86)
+  Mac
+  Linux
+
+Generators:
+  Ninja
+  Visual Studio
+  Xcode
+
+Compilers and toolchains:
+  Clang
+  GCC
+  MSBuild
+  Any private toolchains
+
+configurations * generators * platforms * toolchains = combinatorial explosion
+```
+
 ## Build
 
 ```shell
@@ -75,7 +99,10 @@ $ ./baselard xcode -i examples/app/build.toml -o out
   - [x] `*.vcxproj`
   - [x] `*.vcxproj.filters`
     - [ ] Hierarchical Filters
+  - [ ] `*.vcxproj.user`
+    - [ ] `LocalDebuggerWorkingDirectory`
 - [ ] CMake
 - [ ] Xcode
+- [ ] Generate Ninja (`*.gn`)
 - [ ] qmake
 - [ ] Make
