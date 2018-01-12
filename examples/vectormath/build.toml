@@ -13,3 +13,23 @@ headers = [
 sources = [
   "src/Vector2.cpp",
 ]
+
+[[targets]]
+name = "vectormath_test"
+type = "executable"
+configs = [
+  "../build/common.toml:common",
+]
+deps = [
+  ":vectormath",
+]
+include_dirs = [
+  "include",
+]
+headers = [
+  "test/Vector2Test.h",
+]
+sources = [
+  "test/main.cpp",
+  "test/Vector2Test.cpp",
+]
