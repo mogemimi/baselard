@@ -81,13 +81,16 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 
 			for _, conf := range target.Configs {
 				configFile, _ := splitManifestTarget(conf)
-				requiredManifests = append(requiredManifests, configFile)
+				if len(configFile) > 0 {
+					requiredManifests = append(requiredManifests, configFile)
+				}
 			}
 			for _, conf := range target.Dependencies {
 				configFile, _ := splitManifestTarget(conf)
-				requiredManifests = append(requiredManifests, configFile)
+				if len(configFile) > 0 {
+					requiredManifests = append(requiredManifests, configFile)
+				}
 			}
-			requiredManifests = normalizePathList(baseDir, requiredManifests)
 
 			edge := &Edge{
 				Name:            target.Name,
@@ -122,6 +125,8 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		}
 
 		manifestMap[normalized] = &manifest
+
+		requiredManifests = normalizePathList(baseDir, requiredManifests)
 		manifestFiles = append(requiredManifests, manifestFiles...)
 	}
 
