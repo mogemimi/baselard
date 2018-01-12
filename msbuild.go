@@ -147,9 +147,11 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, gene
 			continue
 		}
 
+		guid, _ := uuid.NewV4()
+
 		projectSource := &MSBuildProjectSource{
 			Name:     edge.Name,
-			GUID:     strings.ToUpper(uuid.NewV4().String()),
+			GUID:     strings.ToUpper(guid.String()),
 			FilePath: filepath.Join(env.ProjectFileDir, edge.Name+".vcxproj"),
 		}
 
