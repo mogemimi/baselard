@@ -101,6 +101,8 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 				LibDirs:         normalizePathList(baseDir, target.LibDirs),
 				Defines:         target.Defines,
 				CompilerFlags:   target.CompilerFlags,
+				CompilerFlagsC:  target.CompilerFlagsC,
+				CompilerFlagsCC: target.CompilerFlagsCC,
 				LinkerFlags:     target.LinkerFlags,
 				MSBuildSettings: target.MSBuildSettings,
 				MSBuildProject:  target.MSBuildProject,
@@ -115,6 +117,8 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 					LibDirs:         normalizePathList(baseDir, tagged.LibDirs),
 					Defines:         tagged.Defines,
 					CompilerFlags:   tagged.CompilerFlags,
+					CompilerFlagsC:  tagged.CompilerFlagsC,
+					CompilerFlagsCC: tagged.CompilerFlagsCC,
 					LinkerFlags:     tagged.LinkerFlags,
 					MSBuildSettings: tagged.MSBuildSettings,
 				}

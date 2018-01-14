@@ -47,7 +47,13 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 	includeDirs := edge.GetIncludeDirs(env)
 	defines := edge.GetDefines(env)
 
+	cflags := edge.GetCompilerFlags(env)
+	cflagsC := edge.GetCompilerFlagsC(env)
+	cflagsCC := edge.GetCompilerFlagsCC(env)
+
 	for _, source := range sources {
+		sourceFileType := getSourceFileType(source)
+
 		obj := filepath.Clean(filepath.Join(env.OutDir, "obj", source+".o"))
 		objFiles = append(objFiles, obj)
 
@@ -59,12 +65,22 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 			variables["defines"] = joinNinjaOptions("-D", defines)
 		}
 
-		cflags := []string{}
-		cflags = append(cflags, edge.GetCompilerFlags(env)...)
 		variables["cflags"] = strings.Join(cflags, " ")
 
+		var compileRule string
+		switch sourceFileType {
+		case SourceFileTypeCSource:
+			compileRule = "compile_c"
+			variables["cflags_c"] = strings.Join(cflagsC, " ")
+		case SourceFileTypeCppSource:
+			compileRule = "compile"
+			variables["cflags_cc"] = strings.Join(cflagsCC, " ")
+		default:
+			continue
+		}
+
 		generator.AddNode(&NinjaBuild{
-			Rule:      "compile",
+			Rule:      compileRule,
 			Inputs:    []string{source},
 			Outputs:   []string{obj},
 			Variables: variables,
@@ -77,8 +93,14 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 	// $cxx -MMD -MF $out.d $defines $includes $cflags $cflags_cc
 	gen.AddRule(&NinjaRule{
+		Name:    "compile_c",
+		Command: "clang -MMD -MF $out.d $defines $include_dirs $cflags $cflags_c -c $in -o $out",
+		Deps:    "gcc",
+		DepFile: "$out.d",
+	})
+	gen.AddRule(&NinjaRule{
 		Name:    "compile",
-		Command: "clang -MMD -MF $out.d $defines $include_dirs $cflags -c $in -o $out",
+		Command: "clang++ -MMD -MF $out.d $defines $include_dirs $cflags $cflags_cc -c $in -o $out",
 		Deps:    "gcc",
 		DepFile: "$out.d",
 	})

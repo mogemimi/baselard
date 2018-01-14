@@ -30,6 +30,8 @@ type Node struct {
 	LibDirs         []string
 	Defines         []string
 	CompilerFlags   []string
+	CompilerFlagsC  []string
+	CompilerFlagsCC []string
 	LinkerFlags     []string
 	MSBuildSettings MSBuildSettings
 	MSBuildProject  MSBuildProject
@@ -118,6 +120,34 @@ func (edge *Node) GetCompilerFlags(env *Environment) (result []string) {
 	}
 	for _, c := range edge.Configs {
 		result = append(result, c.GetCompilerFlags(env)...)
+	}
+	return result
+}
+
+// GetCompilerFlagsC gets a set of the C compiler flags.
+func (edge *Node) GetCompilerFlagsC(env *Environment) (result []string) {
+	result = append(result, edge.CompilerFlagsC...)
+	for _, tag := range env.Tags {
+		if tagged := edge.Tagged[tag]; tagged != nil {
+			result = append(result, tagged.CompilerFlagsC...)
+		}
+	}
+	for _, c := range edge.Configs {
+		result = append(result, c.GetCompilerFlagsC(env)...)
+	}
+	return result
+}
+
+// GetCompilerFlagsCC gets a set of the C++ compiler flags.
+func (edge *Node) GetCompilerFlagsCC(env *Environment) (result []string) {
+	result = append(result, edge.CompilerFlagsCC...)
+	for _, tag := range env.Tags {
+		if tagged := edge.Tagged[tag]; tagged != nil {
+			result = append(result, tagged.CompilerFlagsCC...)
+		}
+	}
+	for _, c := range edge.Configs {
+		result = append(result, c.GetCompilerFlagsCC(env)...)
 	}
 	return result
 }

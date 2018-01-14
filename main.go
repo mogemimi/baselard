@@ -16,6 +16,8 @@ type Tagged struct {
 	Defines         []string        `toml:"defines"`
 	Dependencies    []string        `toml:"deps"`
 	CompilerFlags   []string        `toml:"cflags"`
+	CompilerFlagsC  []string        `toml:"cflags_c"`
+	CompilerFlagsCC []string        `toml:"cflags_cc"`
 	LinkerFlags     []string        `toml:"ldflags"`
 	MSBuildSettings MSBuildSettings `toml:"msbuild_settings"`
 }
@@ -29,6 +31,8 @@ type Target struct {
 	LibDirs         []string          `toml:"lib_dirs"`
 	Defines         []string          `toml:"defines"`
 	CompilerFlags   []string          `toml:"cflags"`
+	CompilerFlagsC  []string          `toml:"cflags_c"`
+	CompilerFlagsCC []string          `toml:"cflags_cc"`
 	LinkerFlags     []string          `toml:"ldflags"`
 	MSBuildSettings MSBuildSettings   `toml:"msbuild_settings"`
 	Dependencies    []string          `toml:"deps"`
