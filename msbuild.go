@@ -37,54 +37,6 @@ type MSBuildXMLItem struct {
 	Filter            string
 }
 
-type MSBuildXMLElement struct {
-	Name       string
-	Text       string
-	Attributes []MSBuildXMLAttribute
-	Elements   []*MSBuildXMLElement
-}
-
-type MSBuildXMLAttribute struct {
-	Key   string
-	Value string
-}
-
-func xmlAttr(key, value string) MSBuildXMLAttribute {
-	return MSBuildXMLAttribute{Key: key, Value: value}
-}
-
-func (proj *MSBuildXMLElement) SubElement(name string, attributes ...MSBuildXMLAttribute) *MSBuildXMLElement {
-	elem := &MSBuildXMLElement{
-		Name:       name,
-		Attributes: attributes,
-	}
-	proj.Elements = append(proj.Elements, elem)
-	return elem
-}
-
-func (proj *MSBuildXMLElement) SetText(text string) *MSBuildXMLElement {
-	proj.Text = text
-	return proj
-}
-
-func (u MSBuildXMLElement) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Name.Local = u.Name
-	start.Attr = []xml.Attr{}
-	for _, attr := range u.Attributes {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: attr.Key}, Value: attr.Value})
-	}
-	e.EncodeToken(start)
-	if len(u.Text) > 0 {
-		e.EncodeToken(xml.CharData(u.Text))
-	} else {
-		for _, elem := range u.Elements {
-			e.EncodeElement(elem, xml.StartElement{Name: xml.Name{Local: elem.Name}})
-		}
-	}
-	e.EncodeToken(start.End())
-	return nil
-}
-
 func getClCompileSources(edge *Node, project *MSBuildProject, env *Environment) (result []MSBuildXMLItem) {
 	type SourceConditions struct {
 		Conditions map[string]bool
