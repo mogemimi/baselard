@@ -4,12 +4,20 @@ import (
 	"fmt"
 )
 
+// OutputType specifies the output type of target being defined.
 type OutputType int
 
 const (
+	// OutputTypeUnknown indicates the output type is undefined.
 	OutputTypeUnknown OutputType = iota
+
+	// OutputTypeExecutable indicates the output type is executable.
 	OutputTypeExecutable
+
+	// OutputTypeStaticLibrary indicates the output type is static library.
 	OutputTypeStaticLibrary
+
+	// OutputTypeDynamicLibrary indicates the output type is dynamic library.
 	OutputTypeDynamicLibrary
 )
 
@@ -30,6 +38,7 @@ type Node struct {
 	Tagged          map[string]*Node
 }
 
+// GetHeaders gets the paths of the header files.
 func (edge *Node) GetHeaders(env *Environment) (result []string) {
 	result = append(result, edge.Headers...)
 	for _, tag := range env.Tags {
@@ -43,6 +52,7 @@ func (edge *Node) GetHeaders(env *Environment) (result []string) {
 	return result
 }
 
+// GetSources gets the paths of the source files.
 func (edge *Node) GetSources(env *Environment) (result []string) {
 	result = append(result, edge.Sources...)
 	for _, tag := range env.Tags {
@@ -56,6 +66,7 @@ func (edge *Node) GetSources(env *Environment) (result []string) {
 	return result
 }
 
+// GetIncludeDirs gets the directories referred to as the header/include search paths.
 func (edge *Node) GetIncludeDirs(env *Environment) (result []string) {
 	result = append(result, edge.IncludeDirs...)
 	for _, tag := range env.Tags {
@@ -69,6 +80,7 @@ func (edge *Node) GetIncludeDirs(env *Environment) (result []string) {
 	return result
 }
 
+// GetLibDirs gets the directories referred to as the library search paths.
 func (edge *Node) GetLibDirs(env *Environment) (result []string) {
 	result = append(result, edge.LibDirs...)
 	for _, tag := range env.Tags {
@@ -82,6 +94,7 @@ func (edge *Node) GetLibDirs(env *Environment) (result []string) {
 	return result
 }
 
+// GetDefines gets a set of the preprocessor macros defined.
 func (edge *Node) GetDefines(env *Environment) (result []string) {
 	result = append(result, edge.Defines...)
 	for _, tag := range env.Tags {
@@ -95,6 +108,7 @@ func (edge *Node) GetDefines(env *Environment) (result []string) {
 	return result
 }
 
+// GetCompilerFlags gets a set of the compiler flags.
 func (edge *Node) GetCompilerFlags(env *Environment) (result []string) {
 	result = append(result, edge.CompilerFlags...)
 	for _, tag := range env.Tags {
@@ -108,6 +122,7 @@ func (edge *Node) GetCompilerFlags(env *Environment) (result []string) {
 	return result
 }
 
+// GetLinkerFlags gets a set of the linker flags.
 func (edge *Node) GetLinkerFlags(env *Environment) (result []string) {
 	result = append(result, edge.LinkerFlags...)
 	for _, tag := range env.Tags {
