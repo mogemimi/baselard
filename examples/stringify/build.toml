@@ -1,0 +1,31 @@
+[[targets]]
+name = "stringify"
+type = "static_library"
+configs = [
+  "../build/common.toml:common",
+]
+include_dirs = [
+  "include",
+]
+headers = [
+  "stringify.h",
+]
+sources = [
+  "stringify.c",
+]
+
+[[targets]]
+name = "stringify_test"
+type = "executable"
+configs = [
+  "../build/common.toml:common",
+]
+deps = [
+  ":stringify",
+]
+include_dirs = [
+  "include",
+]
+sources = [
+  "stringify_test.c",
+]

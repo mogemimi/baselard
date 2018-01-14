@@ -5,10 +5,12 @@ configs = [
   "../build/common.toml:common",
 ]
 deps = [
+  "../stringify/build.toml:stringify",
   "../vectormath/build.toml:vectormath",
 ]
 include_dirs = [
   "include",
+  "../stringify",
   "../vectormath/include",
 ]
 headers = [

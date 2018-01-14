@@ -9,6 +9,10 @@
     #include <engine/TimeSourceApple.h>
 #endif
 
+extern "C" {
+#include "stringify.h"
+}
+
 #include <iostream>
 
 namespace Engine {
@@ -23,6 +27,10 @@ using TimeSource = TimeSourceApple;
 
 void Engine::Run()
 {
+    char buf[100];
+    stringify_int(42, buf, 100);
+    std::cout << "stringify_int = " << buf << std::endl;
+
 #if defined(ENGINE_PLATFORM_LINUX) || \
     defined(ENGINE_PLATFORM_WINDOWS) || \
     defined(ENGINE_PLATFORM_MACOSX)
