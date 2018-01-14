@@ -7,6 +7,7 @@ deps = [
 include_dirs = [
   "libpng",
   "vendor",
+  "../zlib",
 ]
 headers = [
   "vendor/pnglibconf.h",
