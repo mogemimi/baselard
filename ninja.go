@@ -15,14 +15,17 @@ type NinjaGenerator struct {
 	Nodes     []*NinjaBuild
 }
 
+// AddRule adds the new rule to the ninja definition.
 func (gen *NinjaGenerator) AddRule(rule *NinjaRule) {
 	gen.Rules = append(gen.Rules, rule)
 }
 
+// AddNode adds the build node to the ninja graph.
 func (gen *NinjaGenerator) AddNode(edge *NinjaBuild) {
 	gen.Nodes = append(gen.Nodes, edge)
 }
 
+// AddVariable adds the new variable to the ninja definition.
 func (gen *NinjaGenerator) AddVariable(key, value string) {
 	gen.Variables = append(gen.Variables, key+" = "+value)
 }
@@ -70,6 +73,7 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 	return objFiles
 }
 
+// Generate generates the ninja definitions from　graph contains the intermediate nodes.
 func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 	// $cxx -MMD -MF $out.d $defines $includes $cflags $cflags_cc
 	generator.AddRule(&NinjaRule{
@@ -143,6 +147,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*No
 	}
 }
 
+// WriteFile writes the ninja defintions to the specified file.
 func (gen *NinjaGenerator) WriteFile(ninjaFile string) error {
 	dir := filepath.Dir(ninjaFile)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
