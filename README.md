@@ -86,9 +86,7 @@ $ ./baselard xcode -i examples/app/build.toml -o out
 
 #### Format
 
-- [ ] depends
-- [ ] import/include
-- [ ] variables
+- [ ] Variables
 
 #### Generator
 
@@ -102,8 +100,9 @@ $ ./baselard xcode -i examples/app/build.toml -o out
     - [ ] Hierarchical Filters
   - [ ] `*.vcxproj.user`
     - [ ] `LocalDebuggerWorkingDirectory`
-- [ ] CMake
 - [ ] Xcode
+- [ ] Visual Studio Code
+- [ ] CMake and CLion
 - [ ] Generate Ninja (`*.gn`)
 - [ ] qmake
 - [ ] Make
