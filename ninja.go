@@ -74,23 +74,23 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 }
 
 // Generate generates the ninja definitions from　graph contains the intermediate nodes.
-func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
+func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 	// $cxx -MMD -MF $out.d $defines $includes $cflags $cflags_cc
-	generator.AddRule(&NinjaRule{
+	gen.AddRule(&NinjaRule{
 		Name:    "compile",
 		Command: "clang -MMD -MF $out.d $defines $include_dirs $cflags -c $in -o $out",
 		Deps:    "gcc",
 		DepFile: "$out.d",
 	})
-	generator.AddRule(&NinjaRule{
+	gen.AddRule(&NinjaRule{
 		Name:    "link",
 		Command: "ld $in $ldflags -o $out",
 	})
-	generator.AddRule(&NinjaRule{
+	gen.AddRule(&NinjaRule{
 		Name:    "archive",
 		Command: "ar -rc $out $in",
 	})
-	generator.AddRule(&NinjaRule{
+	gen.AddRule(&NinjaRule{
 		Name:    "archive-static-libs",
 		Command: "libtool -static -o $out $in",
 	})
@@ -98,7 +98,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*No
 	for _, edge := range edges {
 		switch edge.Type {
 		case OutputTypeExecutable:
-			objFiles := compileSources(env, edge, generator)
+			objFiles := compileSources(env, edge, gen)
 			libraryFiles := []string{}
 			ldflags := []string{
 				"-L" + filepath.Join(env.OutDir, "bin"),
@@ -118,7 +118,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*No
 				}
 			}
 			executableFile := filepath.Join(env.OutDir, "bin", edge.Name)
-			generator.AddNode(&NinjaBuild{
+			gen.AddNode(&NinjaBuild{
 				Rule:         "link",
 				Inputs:       objFiles,
 				ImplicitDeps: libraryFiles,
@@ -128,7 +128,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*No
 				},
 			})
 		case OutputTypeStaticLibrary:
-			objFiles := compileSources(env, edge, generator)
+			objFiles := compileSources(env, edge, gen)
 			libraryFiles := []string{}
 			for _, dep := range edge.Dependencies {
 				switch dep.Type {
@@ -138,7 +138,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*No
 				}
 			}
 			libFile := filepath.Join(env.OutDir, "bin", "lib"+edge.Name+".a")
-			generator.AddNode(&NinjaBuild{
+			gen.AddNode(&NinjaBuild{
 				Rule:    "archive-static-libs",
 				Inputs:  append(objFiles, libraryFiles...),
 				Outputs: []string{libFile},
