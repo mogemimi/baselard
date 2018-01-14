@@ -11,8 +11,8 @@ import (
 )
 
 type Graph struct {
-	edges   map[string]*Edge
-	sources []*Edge
+	edges   map[string]*Node
+	sources []*Node
 }
 
 type GeneratorSettings struct {
@@ -34,7 +34,7 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 	}
 
 	manifestMap := map[string]*Manifest{}
-	edges := map[string]*Edge{}
+	edges := map[string]*Node{}
 	targets := map[string]Target{}
 
 	generatorSettings := &GeneratorSettings{}
@@ -92,7 +92,7 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 				}
 			}
 
-			edge := &Edge{
+			edge := &Node{
 				Name:            target.Name,
 				Type:            outputType,
 				Headers:         normalizePathList(baseDir, target.Headers),
@@ -106,9 +106,9 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 				MSBuildProject:  target.MSBuildProject,
 			}
 
-			edge.Tagged = map[string]*Edge{}
+			edge.Tagged = map[string]*Node{}
 			for tag, tagged := range target.Tagged {
-				edge.Tagged[tag] = &Edge{
+				edge.Tagged[tag] = &Node{
 					Headers:         normalizePathList(baseDir, tagged.Headers),
 					Sources:         normalizePathList(baseDir, tagged.Sources),
 					IncludeDirs:     normalizePathList(baseDir, tagged.IncludeDirs),
@@ -130,19 +130,19 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		manifestFiles = append(requiredManifests, manifestFiles...)
 	}
 
-	depEdges := map[string]*Edge{}
+	depNodes := map[string]*Node{}
 
 	for name, edge := range edges {
 		target := targets[name]
-		edge.Dependencies = make([]*Edge, 0, len(target.Dependencies))
+		edge.Dependencies = make([]*Node, 0, len(target.Dependencies))
 		for _, v := range target.Dependencies {
 			_, depName := splitManifestTarget(v)
 			dep := edges[depName]
 			edge.Dependencies = append(edge.Dependencies, dep)
-			depEdges[dep.Name] = dep
+			depNodes[dep.Name] = dep
 		}
 
-		edge.Configs = make([]*Edge, 0, len(target.Configs))
+		edge.Configs = make([]*Node, 0, len(target.Configs))
 		for _, v := range target.Configs {
 			_, configName := splitManifestTarget(v)
 			config := edges[configName]
@@ -150,19 +150,19 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		}
 	}
 
-	sourceEdges := []*Edge{}
+	sourceNodes := []*Node{}
 
 	for name, edge := range edges {
-		if depEdges[name] != nil {
+		if depNodes[name] != nil {
 			// NOTE: This edge is not source.
 			continue
 		}
-		sourceEdges = append(sourceEdges, edge)
+		sourceNodes = append(sourceNodes, edge)
 	}
 
 	graph := &Graph{
 		edges:   edges,
-		sources: sourceEdges,
+		sources: sourceNodes,
 	}
 	return graph, generatorSettings, nil
 }

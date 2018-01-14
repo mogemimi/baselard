@@ -13,7 +13,7 @@ const (
 	OutputTypeDynamicLibrary
 )
 
-type Edge struct {
+type Node struct {
 	Name            string
 	Type            OutputType
 	Headers         []string
@@ -25,12 +25,12 @@ type Edge struct {
 	LinkerFlags     []string
 	MSBuildSettings MSBuildSettings
 	MSBuildProject  MSBuildProject
-	Dependencies    []*Edge
-	Configs         []*Edge
-	Tagged          map[string]*Edge
+	Dependencies    []*Node
+	Configs         []*Node
+	Tagged          map[string]*Node
 }
 
-func (edge *Edge) GetHeaders(env *Environment) (result []string) {
+func (edge *Node) GetHeaders(env *Environment) (result []string) {
 	result = append(result, edge.Headers...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -43,7 +43,7 @@ func (edge *Edge) GetHeaders(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetSources(env *Environment) (result []string) {
+func (edge *Node) GetSources(env *Environment) (result []string) {
 	result = append(result, edge.Sources...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -56,7 +56,7 @@ func (edge *Edge) GetSources(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetIncludeDirs(env *Environment) (result []string) {
+func (edge *Node) GetIncludeDirs(env *Environment) (result []string) {
 	result = append(result, edge.IncludeDirs...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -69,7 +69,7 @@ func (edge *Edge) GetIncludeDirs(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetLibDirs(env *Environment) (result []string) {
+func (edge *Node) GetLibDirs(env *Environment) (result []string) {
 	result = append(result, edge.LibDirs...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -82,7 +82,7 @@ func (edge *Edge) GetLibDirs(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetDefines(env *Environment) (result []string) {
+func (edge *Node) GetDefines(env *Environment) (result []string) {
 	result = append(result, edge.Defines...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -95,7 +95,7 @@ func (edge *Edge) GetDefines(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetCompilerFlags(env *Environment) (result []string) {
+func (edge *Node) GetCompilerFlags(env *Environment) (result []string) {
 	result = append(result, edge.CompilerFlags...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -108,7 +108,7 @@ func (edge *Edge) GetCompilerFlags(env *Environment) (result []string) {
 	return result
 }
 
-func (edge *Edge) GetLinkerFlags(env *Environment) (result []string) {
+func (edge *Node) GetLinkerFlags(env *Environment) (result []string) {
 	result = append(result, edge.LinkerFlags...)
 	for _, tag := range env.Tags {
 		if tagged := edge.Tagged[tag]; tagged != nil {
@@ -131,7 +131,7 @@ func copyMSBuildProjectConfiguration(dst, src *MSBuildProjectConfiguration) {
 	copy(dst.Tags, src.Tags)
 }
 
-func (edge *Edge) GetMSBuildProject(env *Environment) MSBuildProject {
+func (edge *Node) GetMSBuildProject(env *Environment) MSBuildProject {
 	result := MSBuildProject{}
 	for _, v := range edge.MSBuildProject.Configurations {
 		c := MSBuildProjectConfiguration{}
@@ -204,7 +204,7 @@ func copyMSBuildSettings(dst, src *MSBuildSettings) {
 	dst.Configuration = copyStringMap(src.Configuration)
 }
 
-func (edge *Edge) GetMSBuildSettings(env *Environment) MSBuildSettings {
+func (edge *Node) GetMSBuildSettings(env *Environment) MSBuildSettings {
 	result := MSBuildSettings{}
 	copyMSBuildSettings(&result, &edge.MSBuildSettings)
 

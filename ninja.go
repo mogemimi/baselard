@@ -12,15 +12,15 @@ import (
 type NinjaGenerator struct {
 	Variables []string
 	Rules     []*NinjaRule
-	Edges     []*NinjaBuild
+	Nodes     []*NinjaBuild
 }
 
 func (gen *NinjaGenerator) AddRule(rule *NinjaRule) {
 	gen.Rules = append(gen.Rules, rule)
 }
 
-func (gen *NinjaGenerator) AddEdge(edge *NinjaBuild) {
-	gen.Edges = append(gen.Edges, edge)
+func (gen *NinjaGenerator) AddNode(edge *NinjaBuild) {
+	gen.Nodes = append(gen.Nodes, edge)
 }
 
 func (gen *NinjaGenerator) AddVariable(key, value string) {
@@ -39,7 +39,7 @@ func joinNinjaOptions(prefix string, options []string) string {
 	return str
 }
 
-func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (objFiles []string) {
+func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (objFiles []string) {
 	sources := edge.GetSources(env)
 	includeDirs := edge.GetIncludeDirs(env)
 	defines := edge.GetDefines(env)
@@ -60,7 +60,7 @@ func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (ob
 		cflags = append(cflags, edge.GetCompilerFlags(env)...)
 		variables["cflags"] = strings.Join(cflags, " ")
 
-		generator.AddEdge(&NinjaBuild{
+		generator.AddNode(&NinjaBuild{
 			Rule:      "compile",
 			Inputs:    []string{source},
 			Outputs:   []string{obj},
@@ -70,7 +70,7 @@ func compileSources(env *Environment, edge *Edge, generator *NinjaGenerator) (ob
 	return objFiles
 }
 
-func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Edge) {
+func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 	// $cxx -MMD -MF $out.d $defines $includes $cflags $cflags_cc
 	generator.AddRule(&NinjaRule{
 		Name:    "compile",
@@ -114,7 +114,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 				}
 			}
 			executableFile := filepath.Join(env.OutDir, "bin", edge.Name)
-			generator.AddEdge(&NinjaBuild{
+			generator.AddNode(&NinjaBuild{
 				Rule:         "link",
 				Inputs:       objFiles,
 				ImplicitDeps: libraryFiles,
@@ -134,7 +134,7 @@ func (generator *NinjaGenerator) Generate(env *Environment, edges map[string]*Ed
 				}
 			}
 			libFile := filepath.Join(env.OutDir, "bin", "lib"+edge.Name+".a")
-			generator.AddEdge(&NinjaBuild{
+			generator.AddNode(&NinjaBuild{
 				Rule:    "archive-static-libs",
 				Inputs:  append(objFiles, libraryFiles...),
 				Outputs: []string{libFile},
@@ -187,7 +187,7 @@ func (gen *NinjaGenerator) WriteFile(ninjaFile string) error {
 		}
 	}
 
-	for _, edge := range gen.Edges {
+	for _, edge := range gen.Nodes {
 		if _, err := writer.WriteString(edge.ToString()); err != nil {
 			return err
 		}
