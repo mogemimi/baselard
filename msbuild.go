@@ -85,7 +85,7 @@ func (u MSBuildXMLElement) MarshalXML(e *xml.Encoder, start xml.StartElement) er
 	return nil
 }
 
-func getClCompileSources(edge *Edge, project *MSBuildProject, env *Environment) (result []MSBuildXMLItem) {
+func getClCompileSources(edge *Node, project *MSBuildProject, env *Environment) (result []MSBuildXMLItem) {
 	type SourceConditions struct {
 		Conditions map[string]bool
 	}
@@ -141,7 +141,7 @@ func getClCompileSources(edge *Edge, project *MSBuildProject, env *Environment) 
 
 func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, generatorSettings *GeneratorSettings) {
 
-	projectSourceMap := map[*Edge]*MSBuildProjectSource{}
+	projectSourceMap := map[*Node]*MSBuildProjectSource{}
 	for _, edge := range graph.edges {
 		if edge.Type == OutputTypeUnknown {
 			continue
