@@ -139,7 +139,7 @@ func getClCompileSources(edge *Node, project *MSBuildProject, env *Environment) 
 	return result
 }
 
-func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph, generatorSettings *GeneratorSettings) {
+func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 
 	projectSourceMap := map[*Node]*MSBuildProjectSource{}
 	for _, edge := range graph.edges {

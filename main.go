@@ -98,7 +98,7 @@ func normalizeConfigFile(filename string) (string, error) {
 }
 
 func generateNinja(manifestFile string, ninjaFile string, tags []string) {
-	graph, _, err := parseGraph(manifestFile)
+	graph, err := parseGraph(manifestFile)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
@@ -121,7 +121,7 @@ func generateNinja(manifestFile string, ninjaFile string, tags []string) {
 }
 
 func generateMSBuild(manifestFile, outputGenDir string) {
-	graph, generatorSettings, err := parseGraph(manifestFile)
+	graph, err := parseGraph(manifestFile)
 	if err != nil {
 		log.Fatalln("error:", err)
 	}
@@ -132,7 +132,7 @@ func generateMSBuild(manifestFile, outputGenDir string) {
 	}
 
 	generator := &MSBuildGenerator{}
-	generator.Generate(env, graph, generatorSettings)
+	generator.Generate(env, graph)
 
 	err = generator.WriteFile(env)
 	if err != nil {

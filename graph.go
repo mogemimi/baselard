@@ -15,9 +15,6 @@ type Graph struct {
 	sources []*Node
 }
 
-type GeneratorSettings struct {
-}
-
 func splitManifestTarget(str string) (manifestFile, targetName string) {
 	s := strings.Split(str, ":")
 	if len(s) == 0 {
@@ -28,7 +25,7 @@ func splitManifestTarget(str string) (manifestFile, targetName string) {
 	return manifestFile, targetName
 }
 
-func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
+func parseGraph(manifestFile string) (*Graph, error) {
 	if len(manifestFile) == 0 {
 		log.Fatalln("error: Please specify a manifest file.")
 	}
@@ -37,15 +34,13 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 	edges := map[string]*Node{}
 	targets := map[string]Target{}
 
-	generatorSettings := &GeneratorSettings{}
-
 	manifestFiles := []string{manifestFile}
 	for len(manifestFiles) > 0 {
 		manifestFile, manifestFiles = manifestFiles[0], manifestFiles[1:]
 
 		normalized, err := normalizeConfigFile(manifestFile)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if manifestMap[normalized] != nil {
@@ -59,7 +54,7 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 
 		var manifest Manifest
 		if _, err := toml.DecodeFile(manifestFile, &manifest); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		baseDir := filepath.Dir(manifestFile)
@@ -168,5 +163,5 @@ func parseGraph(manifestFile string) (*Graph, *GeneratorSettings, error) {
 		edges:   edges,
 		sources: sourceNodes,
 	}
-	return graph, generatorSettings, nil
+	return graph, nil
 }
