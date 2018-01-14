@@ -1,15 +1,16 @@
 # Baselard
 
 A experimental build system for C++ projects. Still work in progress.
+It is distributed under the [MIT License](https://opensource.org/licenses/MIT).
 
 ```
     Inputs
 +-------------+
 |    tags     +--------------------------+
 +-------------+                          |
-                     Graphs              |           Generators
+                                         |           Generators
 +-------------+  +-------------+  +------v------+  +-------------+
-|  build.toml +-->    edges    +-->    eval     +-->    ninja    |
+|  build.toml +-->    Graph    +-->    eval     +-->    ninja    |
 +-------------+  +-----+-------+  +-------------+  +-------------+
                        |
                        |          +-------------+  +-------------+
