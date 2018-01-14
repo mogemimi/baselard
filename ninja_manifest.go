@@ -5,6 +5,7 @@ import (
 	"sort"
 )
 
+// NinjaRule represents a rule for ninja.
 type NinjaRule struct {
 	Name        string
 	Command     string
@@ -13,6 +14,7 @@ type NinjaRule struct {
 	DepFile     string
 }
 
+// NinjaBuild represents a build statement for ninja.
 type NinjaBuild struct {
 	Rule         string
 	Outputs      []string
@@ -23,6 +25,7 @@ type NinjaBuild struct {
 	Pool         string
 }
 
+// ToString converts a ninja rule to a string.
 func (r *NinjaRule) ToString() (str string) {
 	str += fmt.Sprintln("rule", r.Name)
 	if len(r.Description) > 0 {
@@ -38,6 +41,7 @@ func (r *NinjaRule) ToString() (str string) {
 	return str
 }
 
+// ToString converts a ninja definition to a string.
 func (e *NinjaBuild) ToString() (str string) {
 	useMultiLine := (len(e.Outputs)+len(e.ImplicitOuts) > 1) || (len(e.Inputs)+len(e.ImplicitDeps) > 1)
 
