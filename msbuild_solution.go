@@ -8,12 +8,10 @@ import (
 	"sort"
 )
 
-type MSBuildProjectFile struct {
-	GUID           string
-	Name           string
-	FilePath       string
-	Conditions     []string
-	DependProjects []string
+// MSBuildSolution reperesents a solution file in Visual Studio.
+type MSBuildSolution struct {
+	Name     string
+	Projects []*MSBuildProjectFile
 }
 
 func removeDuplicatesFromSlice(in []string) []string {
@@ -28,18 +26,7 @@ func removeDuplicatesFromSlice(in []string) []string {
 	return results
 }
 
-type MSBuildSolution struct {
-	Name     string
-	Projects []*MSBuildProjectSource
-}
-
 func generateMSBuildSolutionFile(solutionFilePath string, solution *MSBuildSolution) (err error) {
-	for _, proj := range solution.Projects {
-		sort.Slice(proj.Conditions, func(i, j int) bool {
-			return proj.Conditions[i] < proj.Conditions[j]
-		})
-	}
-
 	str := `Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.24720.0

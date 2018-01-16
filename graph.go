@@ -12,8 +12,27 @@ import (
 
 // Graph represents a dependency graph.
 type Graph struct {
-	edges   map[string]*Node
-	sources []*Node
+	Nodes   []*Node
+	Sources []*Node
+}
+
+func normalizePathList(base string, paths []string) (result []string) {
+	for _, filename := range paths {
+		result = append(result, filepath.Clean(filepath.Join(base, filename)))
+	}
+	return result
+}
+
+func normalizeConfigFile(filename string) (string, error) {
+	if !filepath.IsAbs(filename) {
+		abs, err := filepath.Abs(filename)
+		if err != nil {
+			return filename, err
+		}
+		filename = abs
+	}
+	filename = filepath.Clean(filename)
+	return filename, nil
 }
 
 func splitManifestTarget(str string) (manifestFile, targetName string) {
@@ -32,7 +51,8 @@ func parseGraph(manifestFile string) (*Graph, error) {
 	}
 
 	manifestMap := map[string]*Manifest{}
-	edges := map[string]*Node{}
+	targetNames := []string{}
+	nodes := map[string]*Node{}
 	targets := map[string]Target{}
 
 	manifestFiles := []string{manifestFile}
@@ -88,7 +108,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 				}
 			}
 
-			edge := &Node{
+			node := &Node{
 				Name:            target.Name,
 				Type:            outputType,
 				Headers:         normalizePathList(baseDir, target.Headers),
@@ -104,9 +124,9 @@ func parseGraph(manifestFile string) (*Graph, error) {
 				MSBuildProject:  target.MSBuildProject,
 			}
 
-			edge.Tagged = map[string]*Node{}
+			node.Tagged = map[string]*Node{}
 			for tag, tagged := range target.Tagged {
-				edge.Tagged[tag] = &Node{
+				node.Tagged[tag] = &Node{
 					Headers:         normalizePathList(baseDir, tagged.Headers),
 					Sources:         normalizePathList(baseDir, tagged.Sources),
 					IncludeDirs:     normalizePathList(baseDir, tagged.IncludeDirs),
@@ -120,7 +140,8 @@ func parseGraph(manifestFile string) (*Graph, error) {
 				}
 			}
 
-			edges[target.Name] = edge
+			targetNames = append(targetNames, target.Name)
+			nodes[target.Name] = node
 			targets[target.Name] = target
 		}
 
@@ -132,37 +153,44 @@ func parseGraph(manifestFile string) (*Graph, error) {
 
 	depNodes := map[string]*Node{}
 
-	for name, edge := range edges {
+	for _, name := range targetNames {
+		node := nodes[name]
 		target := targets[name]
-		edge.Dependencies = make([]*Node, 0, len(target.Dependencies))
+		node.Dependencies = make([]*Node, 0, len(target.Dependencies))
 		for _, v := range target.Dependencies {
 			_, depName := splitManifestTarget(v)
-			dep := edges[depName]
-			edge.Dependencies = append(edge.Dependencies, dep)
+			dep := nodes[depName]
+			node.Dependencies = append(node.Dependencies, dep)
 			depNodes[dep.Name] = dep
 		}
 
-		edge.Configs = make([]*Node, 0, len(target.Configs))
+		node.Configs = make([]*Node, 0, len(target.Configs))
 		for _, v := range target.Configs {
 			_, configName := splitManifestTarget(v)
-			config := edges[configName]
-			edge.Configs = append(edge.Configs, config)
+			config := nodes[configName]
+			node.Configs = append(node.Configs, config)
 		}
 	}
 
 	sourceNodes := []*Node{}
 
-	for name, edge := range edges {
+	for name, node := range nodes {
 		if depNodes[name] != nil {
-			// NOTE: This edge is not source.
+			// NOTE: This node is not source.
 			continue
 		}
-		sourceNodes = append(sourceNodes, edge)
+		sourceNodes = append(sourceNodes, node)
+	}
+
+	orderedNodes := make([]*Node, 0, len(nodes))
+	for _, name := range targetNames {
+		node := nodes[name]
+		orderedNodes = append(orderedNodes, node)
 	}
 
 	graph := &Graph{
-		edges:   edges,
-		sources: sourceNodes,
+		Nodes:   orderedNodes,
+		Sources: sourceNodes,
 	}
 	return graph, nil
 }
