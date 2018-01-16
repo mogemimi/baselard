@@ -64,7 +64,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 			return nil, err
 		}
 
-		if manifestMap[normalized] != nil {
+		if _, ok := manifestMap[normalized]; ok {
 			// NOTE: Skip text that are already read.
 			continue
 		}
@@ -175,7 +175,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 	sourceNodes := []*Node{}
 
 	for name, node := range nodes {
-		if depNodes[name] != nil {
+		if _, ok := depNodes[name]; ok {
 			// NOTE: This node is not source.
 			continue
 		}
