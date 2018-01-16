@@ -42,126 +42,126 @@ type Node struct {
 }
 
 // GetHeaders gets the paths of the header files.
-func (edge *Node) GetHeaders(env *Environment) (result []string) {
-	result = append(result, edge.Headers...)
+func (node *Node) GetHeaders(env *Environment) (result []string) {
+	result = append(result, node.Headers...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.Headers...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetHeaders(env)...)
 	}
 	return result
 }
 
 // GetSources gets the paths of the source files.
-func (edge *Node) GetSources(env *Environment) (result []string) {
-	result = append(result, edge.Sources...)
+func (node *Node) GetSources(env *Environment) (result []string) {
+	result = append(result, node.Sources...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.Sources...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetSources(env)...)
 	}
 	return result
 }
 
 // GetIncludeDirs gets the directories referred to as the header/include search paths.
-func (edge *Node) GetIncludeDirs(env *Environment) (result []string) {
-	result = append(result, edge.IncludeDirs...)
+func (node *Node) GetIncludeDirs(env *Environment) (result []string) {
+	result = append(result, node.IncludeDirs...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.IncludeDirs...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetIncludeDirs(env)...)
 	}
 	return result
 }
 
 // GetLibDirs gets the directories referred to as the library search paths.
-func (edge *Node) GetLibDirs(env *Environment) (result []string) {
-	result = append(result, edge.LibDirs...)
+func (node *Node) GetLibDirs(env *Environment) (result []string) {
+	result = append(result, node.LibDirs...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.LibDirs...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetLibDirs(env)...)
 	}
 	return result
 }
 
 // GetDefines gets a set of the preprocessor macros defined.
-func (edge *Node) GetDefines(env *Environment) (result []string) {
-	result = append(result, edge.Defines...)
+func (node *Node) GetDefines(env *Environment) (result []string) {
+	result = append(result, node.Defines...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.Defines...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetDefines(env)...)
 	}
 	return result
 }
 
 // GetCompilerFlags gets a set of the compiler flags.
-func (edge *Node) GetCompilerFlags(env *Environment) (result []string) {
-	result = append(result, edge.CompilerFlags...)
+func (node *Node) GetCompilerFlags(env *Environment) (result []string) {
+	result = append(result, node.CompilerFlags...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.CompilerFlags...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetCompilerFlags(env)...)
 	}
 	return result
 }
 
 // GetCompilerFlagsC gets a set of the C compiler flags.
-func (edge *Node) GetCompilerFlagsC(env *Environment) (result []string) {
-	result = append(result, edge.CompilerFlagsC...)
+func (node *Node) GetCompilerFlagsC(env *Environment) (result []string) {
+	result = append(result, node.CompilerFlagsC...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.CompilerFlagsC...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetCompilerFlagsC(env)...)
 	}
 	return result
 }
 
 // GetCompilerFlagsCC gets a set of the C++ compiler flags.
-func (edge *Node) GetCompilerFlagsCC(env *Environment) (result []string) {
-	result = append(result, edge.CompilerFlagsCC...)
+func (node *Node) GetCompilerFlagsCC(env *Environment) (result []string) {
+	result = append(result, node.CompilerFlagsCC...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.CompilerFlagsCC...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetCompilerFlagsCC(env)...)
 	}
 	return result
 }
 
 // GetLinkerFlags gets a set of the linker flags.
-func (edge *Node) GetLinkerFlags(env *Environment) (result []string) {
-	result = append(result, edge.LinkerFlags...)
+func (node *Node) GetLinkerFlags(env *Environment) (result []string) {
+	result = append(result, node.LinkerFlags...)
 	for _, tag := range env.Tags {
-		if tagged := edge.Tagged[tag]; tagged != nil {
+		if tagged := node.Tagged[tag]; tagged != nil {
 			result = append(result, tagged.LinkerFlags...)
 		}
 	}
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		result = append(result, c.GetLinkerFlags(env)...)
 	}
 	return result
@@ -177,15 +177,16 @@ func copyMSBuildProjectConfiguration(dst, src *MSBuildProjectConfiguration) {
 	copy(dst.Tags, src.Tags)
 }
 
-func (edge *Node) GetMSBuildProject(env *Environment) MSBuildProject {
+// GetMSBuildProject gets configuration details of MSBuild.
+func (node *Node) GetMSBuildProject(env *Environment) MSBuildProject {
 	result := MSBuildProject{}
-	for _, v := range edge.MSBuildProject.Configurations {
+	for _, v := range node.MSBuildProject.Configurations {
 		c := MSBuildProjectConfiguration{}
 		copyMSBuildProjectConfiguration(&c, &v)
 		result.Configurations = append(result.Configurations, c)
 	}
-	result.ExtensionSettings = append(result.ExtensionSettings, edge.MSBuildProject.ExtensionSettings...)
-	result.ExtensionTargets = append(result.ExtensionTargets, edge.MSBuildProject.ExtensionTargets...)
+	result.ExtensionSettings = append(result.ExtensionSettings, node.MSBuildProject.ExtensionSettings...)
+	result.ExtensionTargets = append(result.ExtensionTargets, node.MSBuildProject.ExtensionTargets...)
 
 	configs := map[string]*MSBuildProjectConfiguration{}
 	for _, v := range result.Configurations {
@@ -193,7 +194,7 @@ func (edge *Node) GetMSBuildProject(env *Environment) MSBuildProject {
 		configs[key] = &v
 	}
 
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		other := c.GetMSBuildProject(env)
 		for _, v := range other.Configurations {
 			key := fmt.Sprintln(v.Configuration, "|", v.Platform)
@@ -250,17 +251,18 @@ func copyMSBuildSettings(dst, src *MSBuildSettings) {
 	dst.Configuration = copyStringMap(src.Configuration)
 }
 
-func (edge *Node) GetMSBuildSettings(env *Environment) MSBuildSettings {
+// GetMSBuildSettings gets configuration settings of MSBuild.
+func (node *Node) GetMSBuildSettings(env *Environment) MSBuildSettings {
 	result := MSBuildSettings{}
-	copyMSBuildSettings(&result, &edge.MSBuildSettings)
+	copyMSBuildSettings(&result, &node.MSBuildSettings)
 
 	for _, tag := range env.Tags {
-		if tagged, ok := edge.Tagged[tag]; ok && tagged != nil {
+		if tagged, ok := node.Tagged[tag]; ok && tagged != nil {
 			mergeMSBuildSettings(&result, &tagged.MSBuildSettings)
 		}
 	}
 
-	for _, c := range edge.Configs {
+	for _, c := range node.Configs {
 		other := c.GetMSBuildSettings(env)
 		mergeMSBuildSettings(&result, &other)
 	}

@@ -22,8 +22,8 @@ func (gen *NinjaGenerator) AddRule(rule *NinjaRule) {
 }
 
 // AddNode adds the build node to the ninja graph.
-func (gen *NinjaGenerator) AddNode(edge *NinjaBuild) {
-	gen.Nodes = append(gen.Nodes, edge)
+func (gen *NinjaGenerator) AddNode(node *NinjaBuild) {
+	gen.Nodes = append(gen.Nodes, node)
 }
 
 // AddVariable adds the new variable to the ninja definition.
@@ -43,14 +43,14 @@ func joinNinjaOptions(prefix string, options []string) string {
 	return str
 }
 
-func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (objFiles []string) {
-	sources := edge.GetSources(env)
-	includeDirs := edge.GetIncludeDirs(env)
-	defines := edge.GetDefines(env)
+func compileSources(env *Environment, node *Node, generator *NinjaGenerator) (objFiles []string) {
+	sources := node.GetSources(env)
+	includeDirs := node.GetIncludeDirs(env)
+	defines := node.GetDefines(env)
 
-	cflags := edge.GetCompilerFlags(env)
-	cflagsC := edge.GetCompilerFlagsC(env)
-	cflagsCC := edge.GetCompilerFlagsCC(env)
+	cflags := node.GetCompilerFlags(env)
+	cflagsC := node.GetCompilerFlagsC(env)
+	cflagsCC := node.GetCompilerFlagsCC(env)
 
 	for _, source := range sources {
 		sourceFileType := getSourceFileType(source)
@@ -91,7 +91,7 @@ func compileSources(env *Environment, edge *Node, generator *NinjaGenerator) (ob
 }
 
 // Generate generates the ninja definitions from　graph contains the intermediate nodes.
-func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
+func (gen *NinjaGenerator) Generate(env *Environment, graph *Graph) {
 	// $cxx -MMD -MF $out.d $defines $includes $cflags $cflags_cc
 	gen.AddRule(&NinjaRule{
 		Name:    "compile_c",
@@ -118,21 +118,21 @@ func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 		Command: "libtool -static -o $out $in",
 	})
 
-	for _, edge := range edges {
-		switch edge.Type {
+	for _, node := range graph.Nodes {
+		switch node.Type {
 		case OutputTypeExecutable:
-			objFiles := compileSources(env, edge, gen)
+			objFiles := compileSources(env, node, gen)
 			libraryFiles := []string{}
 			ldflags := []string{
 				"-L" + filepath.Join(env.OutDir, "bin"),
 			}
-			for _, f := range edge.GetLinkerFlags(env) {
+			for _, f := range node.GetLinkerFlags(env) {
 				ldflags = append(ldflags, f)
 			}
-			for _, dir := range edge.GetLibDirs(env) {
+			for _, dir := range node.GetLibDirs(env) {
 				ldflags = append(ldflags, "-L"+dir)
 			}
-			for _, dep := range edge.Dependencies {
+			for _, dep := range node.Dependencies {
 				switch dep.Type {
 				case OutputTypeStaticLibrary:
 					lib := filepath.Join(env.OutDir, "bin", "lib"+dep.Name+".a")
@@ -140,7 +140,7 @@ func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 					ldflags = append(ldflags, "-l"+dep.Name)
 				}
 			}
-			executableFile := filepath.Join(env.OutDir, "bin", edge.Name)
+			executableFile := filepath.Join(env.OutDir, "bin", node.Name)
 			gen.AddNode(&NinjaBuild{
 				Rule:         "link",
 				Inputs:       objFiles,
@@ -151,16 +151,16 @@ func (gen *NinjaGenerator) Generate(env *Environment, edges map[string]*Node) {
 				},
 			})
 		case OutputTypeStaticLibrary:
-			objFiles := compileSources(env, edge, gen)
+			objFiles := compileSources(env, node, gen)
 			libraryFiles := []string{}
-			for _, dep := range edge.Dependencies {
+			for _, dep := range node.Dependencies {
 				switch dep.Type {
 				case OutputTypeStaticLibrary:
 					lib := filepath.Join(env.OutDir, "bin", "lib"+dep.Name+".a")
 					libraryFiles = append(libraryFiles, lib)
 				}
 			}
-			libFile := filepath.Join(env.OutDir, "bin", "lib"+edge.Name+".a")
+			libFile := filepath.Join(env.OutDir, "bin", "lib"+node.Name+".a")
 			gen.AddNode(&NinjaBuild{
 				Rule:    "archive-static-libs",
 				Inputs:  append(objFiles, libraryFiles...),
@@ -215,8 +215,8 @@ func (gen *NinjaGenerator) WriteFile(ninjaFile string) error {
 		}
 	}
 
-	for _, edge := range gen.Nodes {
-		if _, err := writer.WriteString(edge.ToString()); err != nil {
+	for _, node := range gen.Nodes {
+		if _, err := writer.WriteString(node.ToString()); err != nil {
 			return err
 		}
 	}
