@@ -72,6 +72,7 @@ type Manifest struct {
 	Targets []Target `toml:"targets"`
 }
 
+// Environment specifies a execution environment for project generators.
 type Environment struct {
 	OutDir         string
 	ProjectFileDir string

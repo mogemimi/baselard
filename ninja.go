@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NinjaGenerator generates a ninja file.
 type NinjaGenerator struct {
 	Variables []string
 	Rules     []*NinjaRule

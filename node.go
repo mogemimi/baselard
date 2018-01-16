@@ -21,6 +21,7 @@ const (
 	OutputTypeDynamicLibrary
 )
 
+// Node represents a node in a dependency graph.
 type Node struct {
 	Name            string
 	Type            OutputType

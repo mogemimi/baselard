@@ -12,6 +12,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// MSBuildGenerator generates project files and solution files for Visual Studio.
 type MSBuildGenerator struct {
 	projects []*MSBuildProjectSource
 }
@@ -26,11 +27,13 @@ type MSBuildProjectSource struct {
 	ProjectFilters MSBuildXMLElement
 }
 
+// MSBuildXMLExcludedFromBuild represents a XML element used in *.vcxproj.
 type MSBuildXMLExcludedFromBuild struct {
 	Condition string
 	Excluded  bool
 }
 
+// MSBuildXMLItem represents a XML element used in *.vcxproj.
 type MSBuildXMLItem struct {
 	Include           string
 	ExcludedFromBuild []MSBuildXMLExcludedFromBuild
@@ -91,6 +94,7 @@ func getClCompileSources(edge *Node, project *MSBuildProject, env *Environment) 
 	return result
 }
 
+// Generate generates projects from a project dependency graph.
 func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 
 	projectSourceMap := map[*Node]*MSBuildProjectSource{}

@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// Graph represents a dependency graph.
 type Graph struct {
 	edges   map[string]*Node
 	sources []*Node
