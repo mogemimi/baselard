@@ -1,6 +1,8 @@
 package main
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // MSBuildXMLAttribute represents a xml attribute for Visual Studio projects.
 type MSBuildXMLAttribute struct {
