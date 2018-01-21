@@ -249,7 +249,7 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 				},
 			}
 			for k, v := range msbuild.General {
-				configuration.SubElement(k).SetText(v)
+				propertyGroupsGeneral.SubElement(k).SetText(v)
 			}
 			propertyGroupsGenerals = append(propertyGroupsGenerals, propertyGroupsGeneral)
 
