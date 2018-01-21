@@ -96,6 +96,12 @@ func getClCompileSources(node *Node, project *MSBuildProject, env *Environment) 
 	return result
 }
 
+func sortSubElements(elements []*MSBuildXMLElement) {
+	sort.Slice(elements, func(i, j int) bool {
+		return elements[i].Name < elements[j].Name
+	})
+}
+
 // Generate generates projects from a project dependency graph.
 func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 	projectSourceMap := map[*Node]*MSBuildProjectFile{}
@@ -240,6 +246,7 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 			for k, v := range msbuild.Configuration {
 				configuration.SubElement(k).SetText(v)
 			}
+			sortSubElements(configuration.Elements)
 			propertyGroupsConfigurations = append(propertyGroupsConfigurations, configuration)
 
 			propertyGroupsGeneral := &MSBuildXMLElement{
@@ -251,6 +258,7 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 			for k, v := range msbuild.General {
 				propertyGroupsGeneral.SubElement(k).SetText(v)
 			}
+			sortSubElements(propertyGroupsGeneral.Elements)
 			propertyGroupsGenerals = append(propertyGroupsGenerals, propertyGroupsGeneral)
 
 			itemDefinition := &MSBuildXMLElement{
@@ -265,18 +273,21 @@ func (generator *MSBuildGenerator) Generate(env *Environment, graph *Graph) {
 				for k, v := range msbuild.ClCompile {
 					item.SubElement(k).SetText(v)
 				}
+				sortSubElements(item.Elements)
 			}
 			if len(msbuild.Link) > 0 {
 				item := itemDefinition.SubElement("Link")
 				for k, v := range msbuild.Link {
 					item.SubElement(k).SetText(v)
 				}
+				sortSubElements(item.Elements)
 			}
 			if len(msbuild.Lib) > 0 {
 				item := itemDefinition.SubElement("Lib")
 				for k, v := range msbuild.Lib {
 					item.SubElement(k).SetText(v)
 				}
+				sortSubElements(item.Elements)
 			}
 
 			itemDefinitionGroups = append(itemDefinitionGroups, itemDefinition)
