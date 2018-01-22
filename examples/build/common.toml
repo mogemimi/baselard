@@ -30,6 +30,13 @@ defines = [
   "NDEBUG=1",
 ]
 
+[targets.templates]
+# vcxproj = "templates/cpp.vcxproj"
+# sln = "templates/cpp.sln"
+# cmake = "templates/cpp.cmake"
+# ninja = "templates/cpp.ninja"
+# xcodeproj = "templates/cpp.xcodeproj"
+
 [targets.msbuild_settings.ClCompile]
 WarningLevel = "Level3"
 PrecompiledHeader = ""

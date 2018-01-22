@@ -122,6 +122,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 				LinkerFlags:     target.LinkerFlags,
 				MSBuildSettings: target.MSBuildSettings,
 				MSBuildProject:  target.MSBuildProject,
+				Templates:       target.Templates,
 			}
 
 			node.Tagged = map[string]*Node{}
@@ -137,6 +138,7 @@ func parseGraph(manifestFile string) (*Graph, error) {
 					CompilerFlagsCC: tagged.CompilerFlagsCC,
 					LinkerFlags:     tagged.LinkerFlags,
 					MSBuildSettings: tagged.MSBuildSettings,
+					Templates:       tagged.Templates,
 				}
 			}
 

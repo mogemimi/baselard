@@ -36,6 +36,7 @@ type Node struct {
 	LinkerFlags     []string
 	MSBuildSettings MSBuildSettings
 	MSBuildProject  MSBuildProject
+	Templates       Templates
 	Dependencies    []*Node
 	Configs         []*Node
 	Tagged          map[string]*Node
@@ -265,6 +266,45 @@ func (node *Node) GetMSBuildSettings(env *Environment) MSBuildSettings {
 	for _, c := range node.Configs {
 		other := c.GetMSBuildSettings(env)
 		mergeMSBuildSettings(&result, &other)
+	}
+	return result
+}
+
+// GetTemplates gets a set of the template files.
+func (node *Node) GetTemplates(env *Environment) Templates {
+	result := Templates{
+		MSBuildProject:  node.Templates.MSBuildProject,
+		MSBuildSolution: node.Templates.MSBuildSolution,
+		Ninja:           node.Templates.Ninja,
+		XcodeProject:    node.Templates.XcodeProject,
+	}
+
+	copyIfEmpty := func(dst, src *Templates) {
+		type t struct {
+			dst *string
+			src string
+		}
+		pairs := []t{
+			t{dst: &dst.MSBuildProject, src: src.MSBuildProject},
+			t{dst: &dst.MSBuildSolution, src: src.MSBuildSolution},
+			t{dst: &dst.Ninja, src: src.Ninja},
+			t{dst: &dst.XcodeProject, src: src.XcodeProject},
+		}
+		for _, p := range pairs {
+			if len(*p.dst) == 0 {
+				*p.dst = p.src
+			}
+		}
+	}
+
+	for _, tag := range env.Tags {
+		if tagged := node.Tagged[tag]; tagged != nil {
+			copyIfEmpty(&result, &tagged.Templates)
+		}
+	}
+	for _, c := range node.Configs {
+		temp := c.GetTemplates(env)
+		copyIfEmpty(&result, &temp)
 	}
 	return result
 }

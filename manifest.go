@@ -1,5 +1,13 @@
 package main
 
+// Templates defines template files for generating project files.
+type Templates struct {
+	MSBuildProject  string `toml:"vcxproj"`
+	MSBuildSolution string `toml:"sln"`
+	Ninja           string `toml:"ninja"`
+	XcodeProject    string `toml:"xcodeproj"`
+}
+
 // Tagged defines tagged configuration settings.
 type Tagged struct {
 	Headers         []string        `toml:"headers"`
@@ -13,6 +21,7 @@ type Tagged struct {
 	CompilerFlagsCC []string        `toml:"cflags_cc"`
 	LinkerFlags     []string        `toml:"ldflags"`
 	MSBuildSettings MSBuildSettings `toml:"msbuild_settings"`
+	Templates       Templates       `toml:"templates"`
 }
 
 // Target defines a build target and configuration settings.
@@ -33,6 +42,7 @@ type Target struct {
 	Configs         []string          `toml:"configs"`
 	Tagged          map[string]Tagged `toml:"tagged"`
 	MSBuildProject  MSBuildProject    `toml:"msbuild_project"`
+	Templates       Templates         `toml:"templates"`
 }
 
 // MSBuildSettings defines configuration settings for MSBuild.
