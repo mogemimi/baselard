@@ -1,6 +1,6 @@
 package main
 
-// Tagged defines a tagged configuration settings.
+// Tagged defines tagged configuration settings.
 type Tagged struct {
 	Headers         []string        `toml:"headers"`
 	Sources         []string        `toml:"sources"`
